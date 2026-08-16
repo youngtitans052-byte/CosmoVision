@@ -15,49 +15,115 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* Prevents whole-page scrolling */
+            overflow: hidden;
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            background-color: #050811;
+            background-color: #030407;
             color: #e0e6ed;
-            touch-action: none; /* Allows canvas to handle all touch events */
+            touch-action: none; 
         }
         canvas {
             display: block;
             cursor: grab;
+            width: 100vw;
+            height: 100vh;
         }
         canvas:active {
             cursor: grabbing;
         }
         
-        /* Stellarium-inspired UI Overlay */
+        /* Top Bar */
+        #top-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(5, 8, 15, 0.85);
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            padding: 8px 20px;
+            border-radius: 40px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            z-index: 20;
+            white-space: nowrap;
+        }
+        #app-logo {
+            height: 32px;
+            width: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+        }
+        #tagline {
+            font-size: 0.9em;
+            font-weight: 700;
+            color: #00ffff;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+        }
+
         #ui-panel {
             position: absolute;
             bottom: 25px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(10, 16, 26, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(5, 8, 15, 0.85);
+            border: 1px solid rgba(0, 255, 255, 0.3);
             color: #d1dce5;
-            padding: 16px 28px;
+            padding: 16px;
             border-radius: 12px;
-            width: 90%;
+            width: 95%;
             max-width: 680px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             z-index: 10;
+            transition: padding 0.3s ease;
         }
+        
+        /* Panel Toggle Button */
+        #toggle-panel {
+            text-align: center;
+            cursor: pointer;
+            color: #00ffff;
+            margin-top: -10px;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+            padding: 4px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        #toggle-panel:hover {
+            opacity: 1;
+        }
+        
+        /* Minimized State */
+        #ui-panel.minimized #panel-content {
+            display: none;
+        }
+        #ui-panel.minimized {
+            padding-bottom: 10px;
+        }
+        #ui-panel.minimized #toggle-panel {
+            margin-bottom: 0;
+        }
+
         .time-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
             padding-bottom: 6px;
         }
         #time-display {
             font-size: 1.15em;
             font-weight: 600;
-            color: #ffb400;
+            color: #00ffff;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
             font-family: monospace;
         }
         #coords-display {
@@ -73,7 +139,7 @@
         }
         input[type="range"] {
             flex-grow: 1;
-            accent-color: #ffb400;
+            accent-color: #00ffff;
             cursor: pointer;
         }
         .slider-labels {
@@ -87,72 +153,190 @@
             margin-top: 6px;
             color: #94a3b8;
         }
+
+        .advanced-controls {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(0, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .control-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        input[type="number"], input[type="datetime-local"] {
+            background: rgba(3, 4, 7, 0.8);
+            color: #00ffff;
+            border: 1px solid #00ffff;
+            border-radius: 4px;
+            padding: 6px;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        button {
+            background: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+            border: 1px solid #00ffff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        button:active {
+            background: #00ffff;
+            color: #000;
+        }
+
         #loading {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(10, 16, 26, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #ffb400;
+            top: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(5, 8, 15, 0.85);
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            color: #00ffff;
             padding: 10px 18px;
             border-radius: 6px;
             font-size: 0.9em;
             font-weight: bold;
             pointer-events: none;
             z-index: 100;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="loading">Syncing Open-Meteo Cloud Data...</div>
+    <div id="top-bar">
+        <img src="file_00000000325481faa9e72f433fdc296b.png" alt="App Logo" id="app-logo" onerror="this.style.display='none'">
+        <span id="tagline">What clouds hide we show</span>
+    </div>
+
+    <div id="loading">Syncing Data...</div>
     <canvas id="skyCanvas"></canvas>
 
     <div id="ui-panel">
-        <div class="time-header">
-            <span id="time-display">Loading time...</span>
-            <span id="coords-display">Lat: 20.26° N | Lon: 75.77° E</span>
+        <!-- Minimize/Expand Toggle -->
+        <div id="toggle-panel" title="Toggle Panel">
+            <span id="toggle-icon">▼</span>
         </div>
         
-        <div class="slider-container">
-            <span style="font-size: 0.8em; color: #8fa3b8;">-24h</span>
-            <input type="range" id="timeSlider" min="-24" max="72" value="0" step="1">
-            <span style="font-size: 0.8em; color: #8fa3b8;">+72h</span>
-        </div>
-        <div class="slider-labels">
-            <span>Past 24 Hours</span>
-            <span>Live</span>
-            <span>Next 72 Hours</span>
-        </div>
+        <!-- Collapsible Content -->
+        <div id="panel-content">
+            <div class="time-header">
+                <span id="time-display">Loading time...</span>
+                <span id="coords-display">Lat: 20.26° N | Lon: 75.77° E</span>
+            </div>
+            
+            <div class="slider-container">
+                <span style="font-size: 0.8em; color: #8fa3b8;">-24h</span>
+                <input type="range" id="timeSlider" min="-24" max="72" value="0" step="0.01">
+                <span style="font-size: 0.8em; color: #8fa3b8;">+72h</span>
+            </div>
+            <div class="slider-labels">
+                <span>Past 24 Hours</span>
+                <span>Live</span>
+                <span>Next 72 Hours</span>
+            </div>
 
-        <div id="weather-info">Cloud Cover: --</div>
+            <div id="weather-info">Cloud Cover: --</div>
+
+            <div class="advanced-controls">
+                <div class="control-row">
+                    <span style="font-size: 0.8em; color: #8fa3b8; width: 60px;">Time:</span>
+                    <input type="datetime-local" id="manualTime" style="flex-grow: 1;">
+                </div>
+                
+                <div class="control-row">
+                    <span style="font-size: 0.8em; color: #8fa3b8; width: 60px;">Location:</span>
+                    <input type="number" id="latInput" placeholder="Lat" step="0.01" style="width: 75px;" value="20.26">
+                    <input type="number" id="lonInput" placeholder="Lon" step="0.01" style="width: 75px;" value="75.77">
+                    <button id="btnSetLoc">Set</button>
+                    <button id="btnAutoLoc" style="flex-grow: 1;">📍 Auto GPS</button>
+                </div>
+            </div>
+        </div>
     </div>
 
 <script>
     const canvas = document.getElementById('skyCanvas');
     const ctx = canvas.getContext('2d');
     const timeSlider = document.getElementById('timeSlider');
-    const timeDisplay = document.getElementById('timeDisplay');
+    const timeDisplay = document.getElementById('time-display'); 
+    const coordsDisplay = document.getElementById('coords-display');
     const weatherInfo = document.getElementById('weather-info');
     const loading = document.getElementById('loading');
+    
+    const manualTimeInput = document.getElementById('manualTime');
+    const latInput = document.getElementById('latInput');
+    const lonInput = document.getElementById('lonInput');
+    const btnSetLoc = document.getElementById('btnSetLoc');
+    const btnAutoLoc = document.getElementById('btnAutoLoc');
+    
+    // Panel toggle logic
+    const uiPanel = document.getElementById('ui-panel');
+    const togglePanel = document.getElementById('toggle-panel');
+    const toggleIcon = document.getElementById('toggle-icon');
 
-    // Default Coordinates
+    togglePanel.addEventListener('click', () => {
+        uiPanel.classList.toggle('minimized');
+        if (uiPanel.classList.contains('minimized')) {
+            toggleIcon.innerText = '▲';
+        } else {
+            toggleIcon.innerText = '▼';
+        }
+    });
+
     let lat = 20.26;
     let lon = 75.77;
 
-    // View Transformation Parameters
     let scale = 1;
-    let panX = 0;
-    let panY = 0;
+    let panX = window.innerWidth / 2;
+    let panY = window.innerHeight / 2;
     let isDragging = false;
     let startDragX, startDragY;
 
-    // Data State
     let weatherData = null;
-    let baseTime = new Date();
-    baseTime.setMinutes(0, 0, 0);
+    let isUpdatingTimeInput = false;
 
-    // Offscreen Cloud Puff Textures Generator
+    function createDefaultWeatherData() {
+        const now = new Date();
+        const times = [];
+        for (let i = -24; i <= 72; i++) {
+            const d = new Date(now.getTime() + i * 3600000);
+            times.push(d.toISOString());
+        }
+        return {
+            time: times,
+            cloud_cover: Array(97).fill(30),
+            cloud_cover_low: Array(97).fill(10),
+            cloud_cover_mid: Array(97).fill(10),
+            cloud_cover_high: Array(97).fill(10),
+            is_day: Array(97).fill(1),
+            wind_direction_10m: Array(97).fill(0),
+            currentIndex: 24,
+            isError: false
+        };
+    }
+
+    function lerp(start, end, t) {
+        return start * (1 - t) + end * t;
+    }
+    function lerpColor(c1, c2, t) {
+        return [
+            Math.round(c1[0] + (c2[0] - c1[0]) * t),
+            Math.round(c1[1] + (c2[1] - c1[1]) * t),
+            Math.round(c1[2] + (c2[2] - c1[2]) * t)
+        ];
+    }
+
     const cloudTextures = {};
     function createCloudTexture(type) {
         const pCanvas = document.createElement('canvas');
@@ -171,7 +355,7 @@
             grad.addColorStop(0, 'rgba(230, 235, 245, 0.7)');
             grad.addColorStop(0.5, 'rgba(180, 195, 215, 0.4)');
             grad.addColorStop(1, 'rgba(180, 195, 215, 0)');
-        } else { // High wispy cloud
+        } else { 
             grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
             grad.addColorStop(0.6, 'rgba(220, 230, 245, 0.2)');
             grad.addColorStop(1, 'rgba(220, 230, 245, 0)');
@@ -188,7 +372,6 @@
     cloudTextures.mid = createCloudTexture('mid');
     cloudTextures.high = createCloudTexture('high');
 
-    // Canvas Resize
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -200,31 +383,33 @@
     }
     window.addEventListener('resize', resize);
 
-    // Fetch Open-Meteo Data
     async function fetchWeatherData() {
+        loading.innerText = "Syncing Data...";
         loading.style.display = 'block';
         try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day,wind_direction_10m&past_days=1&forecast_days=4`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day,wind_direction_10m&past_days=1&forecast_days=4&timezone=auto`;
             const response = await fetch(url);
             const data = await response.json();
-            weatherData = data.hourly;
             
-            const nowIso = baseTime.toISOString().slice(0, 14) + "00";
-            let currentIndex = weatherData.time.findIndex(t => t.startsWith(nowIso));
-            if (currentIndex === -1) currentIndex = 24;
+            if (data.error) throw new Error(data.reason);
 
-            weatherData.currentIndex = currentIndex;
-            updateUI();
-            generateProceduralCloudPositions();
+            weatherData = data.hourly;
+            weatherData.currentIndex = 24; 
+            
+            let latDir = lat >= 0 ? 'N' : 'S';
+            let lonDir = lon >= 0 ? 'E' : 'W';
+            coordsDisplay.innerText = `Lat: ${Math.abs(lat).toFixed(2)}° ${latDir} | Lon: ${Math.abs(lon).toFixed(2)}° ${lonDir}`;
+            
             draw();
         } catch (e) {
-            console.error("Open-Meteo fetch failed:", e);
-            document.getElementById('time-display').innerText = "Data Fetch Error";
+            console.error("Fetch failed:", e);
+            if (!weatherData) weatherData = createDefaultWeatherData();
+            weatherData.isError = true;
+            draw();
         }
         loading.style.display = 'none';
     }
 
-    // Format Degree into DD° MM' SS.µs"
     function formatDMS(degrees) {
         let isNeg = degrees < 0;
         let absDeg = Math.abs(degrees);
@@ -244,7 +429,6 @@
         }
     }
 
-    // Static cloud position seed array across sky dome
     let cloudField = [];
     function generateProceduralCloudPositions() {
         cloudField = [];
@@ -258,75 +442,86 @@
         }
     }
 
-    function updateUI() {
-        if (!weatherData) return;
-        const targetIndex = weatherData.currentIndex + parseInt(timeSlider.value);
-        
-        if (targetIndex >= 0 && targetIndex < weatherData.time.length) {
-            const t = new Date(weatherData.time[targetIndex]);
-            document.getElementById('time-display').innerText = t.toLocaleString([], {
-                weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-            });
-            
-            const total = weatherData.cloud_cover[targetIndex];
-            weatherInfo.innerText = `Total Cloudiness: ${total}% | Low: ${weatherData.cloud_cover_low[targetIndex]}% | Mid: ${weatherData.cloud_cover_mid[targetIndex]}% | High: ${weatherData.cloud_cover_high[targetIndex]}%`;
-            
-            draw();
-        }
-    }
-
-    // Render Function
     function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (!weatherData) return;
 
-        const targetIndex = weatherData.currentIndex + parseInt(timeSlider.value);
-        if (targetIndex < 0 || targetIndex >= weatherData.time.length) return;
+        const exactOffset = parseFloat(timeSlider.value);
+        let idx0 = weatherData.currentIndex + Math.floor(exactOffset);
+        let idx1 = idx0 + 1;
+        let t = exactOffset - Math.floor(exactOffset);
 
-        const isDay = weatherData.is_day[targetIndex];
+        if (idx0 < 0) idx0 = 0;
+        if (idx1 >= weatherData.time.length) idx1 = weatherData.time.length - 1;
+
+        let time0 = new Date(weatherData.time[idx0]).getTime();
+        let time1 = new Date(weatherData.time[idx1]).getTime();
+        let exactTime = new Date(lerp(time0, time1, t));
+        
+        timeDisplay.innerText = exactTime.toLocaleString([], {
+            weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        
+        if (!isUpdatingTimeInput) {
+            let tzOffset = exactTime.getTimezoneOffset() * 60000;
+            let localISOTime = (new Date(exactTime.getTime() - tzOffset)).toISOString().slice(0, 16);
+            manualTimeInput.value = localISOTime;
+        }
+
+        let cTotal = lerp(weatherData.cloud_cover[idx0], weatherData.cloud_cover[idx1], t);
+        let cLow = lerp(weatherData.cloud_cover_low[idx0], weatherData.cloud_cover_low[idx1], t);
+        let cMid = lerp(weatherData.cloud_cover_mid[idx0], weatherData.cloud_cover_mid[idx1], t);
+        let cHigh = lerp(weatherData.cloud_cover_high[idx0], weatherData.cloud_cover_high[idx1], t);
+        
+        weatherInfo.innerText = `Total Cloudiness: ${Math.round(cTotal)}% | Low: ${Math.round(cLow)}% | Mid: ${Math.round(cMid)}% | High: ${Math.round(cHigh)}%`;
+
+        let w0 = weatherData.wind_direction_10m[idx0] || 0;
+        let w1 = weatherData.wind_direction_10m[idx1] || 0;
+        let wDiff = (w1 - w0 + 540) % 360 - 180; 
+        let windDir = (w0 + wDiff * t) * Math.PI / 180;
+        let dayRatio = lerp(weatherData.is_day[idx0], weatherData.is_day[idx1], t);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         const skyRadius = Math.min(canvas.width, canvas.height) * 0.42 * scale;
 
         ctx.save();
         ctx.translate(panX, panY);
 
-        // 1. Draw Green Ground Floor
-        ctx.fillStyle = "#163a19";
+        ctx.fillStyle = "#03040a"; 
         ctx.fillRect(-panX, -panY, canvas.width, canvas.height);
 
-        // 2. Draw Atmosphere / Sky Dome Disc
         ctx.beginPath();
         ctx.arc(0, 0, skyRadius, 0, Math.PI * 2);
 
-        let skyGrad;
-        if (isDay) {
-            skyGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, skyRadius);
-            skyGrad.addColorStop(0, '#62a2df');
-            skyGrad.addColorStop(0.7, '#3b7ebf');
-            skyGrad.addColorStop(1, '#81b3e6');
-        } else {
-            skyGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, skyRadius);
-            skyGrad.addColorStop(0, '#040914');
-            skyGrad.addColorStop(0.8, '#081224');
-            skyGrad.addColorStop(1, '#0e1b30');
-        }
+        let sCol1 = lerpColor([2, 5, 12], [20, 60, 90], dayRatio);
+        let sCol2 = lerpColor([4, 9, 22], [15, 45, 75], dayRatio);
+        let sCol3 = lerpColor([8, 15, 30], [25, 70, 110], dayRatio);
+
+        let skyGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, skyRadius);
+        skyGrad.addColorStop(0, `rgb(${sCol1[0]},${sCol1[1]},${sCol1[2]})`);
+        skyGrad.addColorStop(0.7, `rgb(${sCol2[0]},${sCol2[1]},${sCol2[2]})`);
+        skyGrad.addColorStop(1, `rgb(${sCol3[0]},${sCol3[1]},${sCol3[2]})`);
+        
         ctx.fillStyle = skyGrad;
         ctx.fill();
 
-        // Clip drawing to inside the celestial sphere
         ctx.save();
         ctx.clip();
 
-        // 3. Coordinate Grids
         ctx.lineWidth = 1;
-        ctx.strokeStyle = isDay ? "rgba(255, 255, 255, 0.25)" : "rgba(80, 220, 120, 0.25)";
-        ctx.fillStyle = isDay ? "rgba(255, 255, 255, 0.7)" : "rgba(80, 220, 120, 0.8)";
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 5;
+        
+        let gridR = 0, gridG = 255, gridB = 255;
+        let alpha = lerp(0.15, 0.4, dayRatio);
+        
+        ctx.strokeStyle = `rgba(${gridR}, ${gridG}, ${gridB}, ${alpha})`;
+        ctx.fillStyle = `rgba(${gridR}, ${gridG}, ${gridB}, ${alpha + 0.3})`;
         ctx.font = "11px monospace";
 
         let altStep = 15;
         if (scale > 4) altStep = 5;
         if (scale > 15) altStep = 1;
         if (scale > 100) altStep = 1/60; 
-        if (scale > 2000) altStep = 1/3600; 
 
         for (let alt = 0; alt < 90; alt += altStep) {
             let r = skyRadius * (1 - alt / 90);
@@ -339,26 +534,36 @@
             }
         }
 
-        // Azimuth Radial Lines
         let azStep = altStep >= 1 ? 30 : 15;
         for (let az = 0; az < 360; az += azStep) {
             let angle = (az - 90) * Math.PI / 180;
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.lineTo(Math.cos(angle) * skyRadius, Math.sin(angle) * skyRadius);
+            let edgeX = Math.cos(angle) * skyRadius;
+            let edgeY = Math.sin(angle) * skyRadius;
+            ctx.lineTo(edgeX, edgeY);
             ctx.stroke();
+
+            if (scale > 1.5 || az % 30 === 0) {
+                ctx.save();
+                ctx.translate(edgeX * 0.9, edgeY * 0.9); 
+                ctx.rotate(angle + Math.PI/2);
+                ctx.textAlign = "center";
+                ctx.fillText(`Az ${formatDMS(az)}`, 0, 0);
+                ctx.restore();
+            }
         }
 
-        // 4. Render Clouds
-        const cLow = weatherData.cloud_cover_low[targetIndex];
-        const cMid = weatherData.cloud_cover_mid[targetIndex];
-        const cHigh = weatherData.cloud_cover_high[targetIndex];
-        const windDir = (weatherData.wind_direction_10m[targetIndex] || 0) * Math.PI / 180;
+        ctx.shadowBlur = 0;
 
+        let globalCloudAlpha = lerp(0.45, 0.85, dayRatio);
         cloudField.forEach((c, idx) => {
-            let cover = c.layer === 'low' ? cLow : (c.layer === 'mid' ? cMid : cHigh);
-            if ((idx % 100) < cover) {
-                let shift = (targetIndex % 24) * 0.02;
+            let targetCover = c.layer === 'low' ? cLow : (c.layer === 'mid' ? cMid : cHigh);
+            let threshold = idx % 100;
+            let visibilityDiff = targetCover - threshold;
+            
+            if (visibilityDiff > 0) {
+                let localAlpha = visibilityDiff < 1 ? visibilityDiff : 1.0; 
                 let az = c.azimuth + windDir * 0.1;
                 let r = skyRadius * (1 - c.altitude / 90);
 
@@ -369,36 +574,40 @@
                 let renderSize = img.width * c.scaleMod * (scale * 0.5);
 
                 ctx.save();
-                ctx.globalAlpha = isDay ? 0.85 : 0.45;
+                ctx.globalAlpha = globalCloudAlpha * localAlpha;
                 ctx.drawImage(img, x - renderSize/2, y - renderSize/2, renderSize, renderSize);
                 ctx.restore();
             }
         });
 
-        // Zenith Center Point
         ctx.beginPath();
         ctx.arc(0, 0, 3, 0, Math.PI * 2);
-        ctx.fillStyle = "#ff3333";
+        ctx.fillStyle = "#ff0055";
+        ctx.shadowColor = '#ff0055';
+        ctx.shadowBlur = 10;
         ctx.fill();
+        ctx.shadowBlur = 0;
 
-        ctx.restore(); // Exit clip
+        ctx.restore(); 
 
-        // 5. Horizon Edge Ring & Direction Labels
         ctx.beginPath();
         ctx.arc(0, 0, skyRadius, 0, Math.PI * 2);
         ctx.lineWidth = 3;
-        ctx.strokeStyle = "#2d6a31"; 
+        ctx.strokeStyle = "#00ffff"; 
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 15;
         ctx.stroke();
+        ctx.shadowBlur = 0;
 
         const directions = [
-            { label: 'N', angle: -90, color: '#ff4d4d' },
-            { label: 'NE', angle: -45, color: '#ffffff' },
-            { label: 'E', angle: 0, color: '#ffffff' },
-            { label: 'SE', angle: 45, color: '#ffffff' },
-            { label: 'S', angle: 90, color: '#ffffff' },
-            { label: 'SW', angle: 135, color: '#ffffff' },
-            { label: 'W', angle: 180, color: '#ffffff' },
-            { label: 'NW', angle: 225, color: '#ffffff' }
+            { label: 'N', angle: -90, color: '#ff0055' }, 
+            { label: 'NE', angle: -45, color: '#00ffff' },
+            { label: 'E', angle: 0, color: '#00ffff' },
+            { label: 'SE', angle: 45, color: '#00ffff' },
+            { label: 'S', angle: 90, color: '#00ffff' },
+            { label: 'SW', angle: 135, color: '#00ffff' },
+            { label: 'W', angle: 180, color: '#00ffff' },
+            { label: 'NW', angle: 225, color: '#00ffff' }
         ];
 
         ctx.font = "bold 15px 'Segoe UI', sans-serif";
@@ -407,44 +616,95 @@
 
         directions.forEach(d => {
             let rad = d.angle * Math.PI / 180;
-            let lx = Math.cos(rad) * (skyRadius + 18);
-            let ly = Math.sin(rad) * (skyRadius + 18);
+            let lx = Math.cos(rad) * (skyRadius + 20);
+            let ly = Math.sin(rad) * (skyRadius + 20);
 
-            ctx.fillStyle = "rgba(10, 16, 26, 0.7)";
+            ctx.fillStyle = "rgba(5, 8, 15, 0.8)";
             ctx.beginPath();
-            ctx.arc(lx, ly, 12, 0, Math.PI * 2);
+            ctx.arc(lx, ly, 14, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.fillStyle = d.color;
+            ctx.shadowColor = d.color;
+            ctx.shadowBlur = 8;
             ctx.fillText(d.label, lx, ly + 1);
+            ctx.shadowBlur = 0;
         });
 
         ctx.restore();
     }
 
-    // --- INTERACTIVITY: ZOOM & PAN (DESKTOP + MOBILE TOUCH) ---
+    timeSlider.addEventListener('input', () => {
+        isUpdatingTimeInput = false; 
+        requestAnimationFrame(draw);
+    });
 
-    // Apply Zoom logic shared by mouse and touch
+    manualTimeInput.addEventListener('input', (e) => {
+        if(!weatherData) return;
+        isUpdatingTimeInput = true; 
+        
+        const selectedTime = new Date(e.target.value).getTime();
+        const baseTime = new Date(weatherData.time[weatherData.currentIndex]).getTime();
+        
+        let diffHours = (selectedTime - baseTime) / (1000 * 60 * 60);
+        diffHours = Math.max(-24, Math.min(72, diffHours));
+        
+        timeSlider.value = diffHours;
+        requestAnimationFrame(draw);
+    });
+    manualTimeInput.addEventListener('blur', () => { isUpdatingTimeInput = false; });
+
+    btnSetLoc.addEventListener('click', () => {
+        const newLat = parseFloat(latInput.value);
+        const newLon = parseFloat(lonInput.value);
+        if (!isNaN(newLat) && !isNaN(newLon)) {
+            lat = newLat;
+            lon = newLon;
+            fetchWeatherData();
+        } else {
+            alert("Please enter valid numbers for Latitude and Longitude.");
+        }
+    });
+
+    btnAutoLoc.addEventListener('click', () => {
+        if (navigator.geolocation) {
+            loading.innerText = "Getting GPS Location...";
+            loading.style.display = 'block';
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    lat = position.coords.latitude;
+                    lon = position.coords.longitude;
+                    latInput.value = lat.toFixed(4);
+                    lonInput.value = lon.toFixed(4);
+                    fetchWeatherData();
+                },
+                (error) => {
+                    loading.style.display = 'none';
+                    alert("Location access denied or unavailable.");
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        } else {
+            alert("Geolocation is not supported by your browser/device.");
+        }
+    });
+
     function applyZoom(zoomFactor, clientX, clientY) {
         const mouseX = clientX - panX;
         const mouseY = clientY - panY;
-
         scale *= zoomFactor;
-        scale = Math.max(0.5, Math.min(scale, 100000)); // allow deep microsecond zoom
-
+        scale = Math.max(0.5, Math.min(scale, 100000));
         panX -= mouseX * (zoomFactor - 1);
         panY -= mouseY * (zoomFactor - 1);
-        draw();
+        requestAnimationFrame(draw);
     }
 
-    // 1. Desktop Mouse Wheel Zoom
     canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
-        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
-        applyZoom(zoomFactor, e.clientX, e.clientY);
+        applyZoom(e.deltaY < 0 ? 1.15 : 0.85, e.clientX, e.clientY);
     }, { passive: false });
 
-    // 2. Desktop Mouse Drag Pan
     canvas.addEventListener('mousedown', (e) => {
         isDragging = true;
         startDragX = e.clientX - panX;
@@ -455,20 +715,18 @@
         if (!isDragging) return;
         panX = e.clientX - startDragX;
         panY = e.clientY - startDragY;
-        draw();
+        requestAnimationFrame(draw);
     });
 
     window.addEventListener('mouseup', () => isDragging = false);
 
-    // 3. Mobile Touch Pan & Pinch Zoom
     let initialPinchDistance = null;
-
     canvas.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) { // Single finger swipe (Pan)
+        if (e.touches.length === 1) { 
             isDragging = true;
             startDragX = e.touches[0].clientX - panX;
             startDragY = e.touches[0].clientY - panY;
-        } else if (e.touches.length === 2) { // Two fingers (Pinch Zoom)
+        } else if (e.touches.length === 2) {
             isDragging = false;
             initialPinchDistance = Math.hypot(
                 e.touches[0].clientX - e.touches[1].clientX,
@@ -478,23 +736,21 @@
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
-        e.preventDefault(); // Prevent standard mobile page scroll/pull-to-refresh
+        e.preventDefault(); 
         if (e.touches.length === 1 && isDragging) {
             panX = e.touches[0].clientX - startDragX;
             panY = e.touches[0].clientY - startDragY;
-            draw();
+            requestAnimationFrame(draw);
         } else if (e.touches.length === 2 && initialPinchDistance) {
             const currentDistance = Math.hypot(
                 e.touches[0].clientX - e.touches[1].clientX,
                 e.touches[0].clientY - e.touches[1].clientY
             );
-            
-            const zoomFactor = currentDistance / initialPinchDistance;
-            const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-            const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
-            applyZoom(zoomFactor, centerX, centerY);
-            initialPinchDistance = currentDistance; // reset for smooth continuous zoom
+            applyZoom(currentDistance / initialPinchDistance, 
+                (e.touches[0].clientX + e.touches[1].clientX) / 2, 
+                (e.touches[0].clientY + e.touches[1].clientY) / 2
+            );
+            initialPinchDistance = currentDistance; 
         }
     }, { passive: false });
 
@@ -503,10 +759,9 @@
         initialPinchDistance = null;
     });
 
-    // Time Slider Event
-    timeSlider.addEventListener('input', updateUI);
-
-    // Initialization
+    // INITIALIZATION
+    weatherData = createDefaultWeatherData();
+    generateProceduralCloudPositions();
     resize();
     fetchWeatherData();
 </script>
