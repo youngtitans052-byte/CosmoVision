@@ -1,574 +1,1075 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stellarium Real-Time Cloud Sky Map</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            background-color: #030407;
-            color: #e0e6ed;
-            touch-action: none; 
-        }
-        canvas {
-            display: block;
-            cursor: grab;
-            width: 100vw;
-            height: 100vh;
-        }
-        canvas:active {
-            cursor: grabbing;
-        }
-        
-        /* Top Bar */
-        #top-bar {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(5, 8, 15, 0.85);
-            border: 1px solid rgba(0, 255, 255, 0.4);
-            padding: 8px 20px;
-            border-radius: 40px;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            z-index: 20;
-            white-space: nowrap;
-        }
-        #app-logo {
-            height: 32px;
-            width: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 1px solid #00ffff;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
-        }
-        #tagline {
-            font-size: 0.9em;
-            font-weight: 700;
-            color: #00ffff;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
-        }
+<meta charset="UTF-8">
 
-        #ui-panel {
-            position: absolute;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(5, 8, 15, 0.85);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            color: #d1dce5;
-            padding: 16px;
-            border-radius: 12px;
-            width: 95%;
-            max-width: 680px;
-            box-shadow: 0 0 25px rgba(0, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            z-index: 10;
-            transition: padding 0.3s ease;
-        }
-        
-        /* Panel Toggle Button */
-        #toggle-panel {
-            text-align: center;
-            cursor: pointer;
-            color: #00ffff;
-            margin-top: -10px;
-            margin-bottom: 12px;
-            font-size: 1.1em;
-            padding: 4px;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-        #toggle-panel:hover {
-            opacity: 1;
-        }
-        
-        /* Minimized State */
-        #ui-panel.minimized #panel-content {
-            display: none;
-        }
-        #ui-panel.minimized {
-            padding-bottom: 10px;
-        }
-        #ui-panel.minimized #toggle-panel {
-            margin-bottom: 0;
-        }
+<meta name="viewport"
+      content="width=device-width,
+      initial-scale=1.0,
+      maximum-scale=1.0,
+      user-scalable=no">
 
-        .time-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-            padding-bottom: 6px;
-        }
-        #time-display {
-            font-size: 1.15em;
-            font-weight: 600;
-            color: #00ffff;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
-            font-family: monospace;
-        }
-        #coords-display {
-            font-size: 0.85em;
-            color: #8fa3b8;
-            font-family: monospace;
-        }
-        .slider-container {
-            margin: 12px 0 6px 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        input[type="range"] {
-            flex-grow: 1;
-            accent-color: #00ffff;
-            cursor: pointer;
-        }
-        .slider-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75em;
-            color: #64748b;
-        }
-        #weather-info {
-            font-size: 0.85em;
-            margin-top: 6px;
-            color: #94a3b8;
-        }
+<title>Cosmo Vision</title>
 
-        .advanced-controls {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px dashed rgba(0, 255, 255, 0.2);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .control-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        input[type="number"], input[type="datetime-local"] {
-            background: rgba(3, 4, 7, 0.8);
-            color: #00ffff;
-            border: 1px solid #00ffff;
-            border-radius: 4px;
-            padding: 6px;
-            font-family: monospace;
-            font-size: 0.85em;
-        }
-        button {
-            background: rgba(0, 255, 255, 0.1);
-            color: #00ffff;
-            border: 1px solid #00ffff;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85em;
-            transition: all 0.2s;
-        }
-        button:active {
-            background: #00ffff;
-            color: #000;
-        }
+<style>
 
-        #loading {
-            position: absolute;
-            top: 85px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(5, 8, 15, 0.85);
-            border: 1px solid rgba(0, 255, 255, 0.4);
-            color: #00ffff;
-            padding: 10px 18px;
-            border-radius: 6px;
-            font-size: 0.9em;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 100;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
-            display: none;
-        }
-    </style>
+/* =====================================================
+   BASIC
+===================================================== */
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #030407;
+    color: #e0e6ed;
+}
+
+
+/* =====================================================
+   HOME SCREEN
+===================================================== */
+
+#home {
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding: 40px 20px;
+
+    overflow-y: auto;
+
+    background:
+        radial-gradient(
+            circle at 50% 15%,
+            rgba(0,255,255,0.12),
+            transparent 35%
+        ),
+        #030407;
+}
+
+
+/* LOGO */
+
+.logo {
+    width: 80px;
+    height: 80px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    border: 2px solid #00ffff;
+
+    box-shadow:
+        0 0 15px rgba(0,255,255,0.5),
+        0 0 35px rgba(0,255,255,0.15);
+}
+
+
+/* TITLE */
+
+.title {
+    margin-top: 18px;
+
+    font-size: 2.2rem;
+    font-weight: 900;
+
+    letter-spacing: 4px;
+
+    color: #00ffff;
+
+    text-shadow:
+        0 0 10px rgba(0,255,255,0.7),
+        0 0 25px rgba(0,255,255,0.3);
+
+    text-align: center;
+}
+
+
+/* TAGLINE */
+
+.tagline {
+    margin-top: 7px;
+    margin-bottom: 35px;
+
+    color: #8fa3b8;
+
+    font-size: 0.8rem;
+
+    letter-spacing: 2px;
+
+    text-align: center;
+}
+
+
+/* =====================================================
+   MENU
+===================================================== */
+
+.menu {
+    width: 100%;
+    max-width: 500px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 15px;
+}
+
+
+/* MENU BUTTON */
+
+.menu-btn {
+    width: 100%;
+
+    padding: 19px;
+
+    border-radius: 15px;
+
+    border: 1px solid rgba(0,255,255,0.35);
+
+    background:
+        rgba(5,8,15,0.9);
+
+    color: #e0e6ed;
+
+    font-size: 1rem;
+    font-weight: 700;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 0 15px rgba(0,255,255,0.08);
+
+    transition: 0.2s;
+}
+
+.menu-btn:hover {
+    border-color: #00ffff;
+
+    box-shadow:
+        0 0 25px rgba(0,255,255,0.25);
+
+    transform: translateY(-2px);
+}
+
+.menu-btn:active {
+    transform: scale(0.98);
+}
+
+.menu-btn span {
+    float: right;
+    color: #00ffff;
+}
+
+
+/* PREMIUM BUTTON */
+
+.premium-btn {
+    border-color: rgba(255,215,0,0.5);
+
+    box-shadow:
+        0 0 15px rgba(255,215,0,0.08);
+}
+
+.premium-btn span {
+    color: #ffd700;
+}
+
+
+/* =====================================================
+   SCREENS
+===================================================== */
+
+.screen {
+    display: none;
+
+    width: 100%;
+    height: 100%;
+
+    background: #030407;
+
+    overflow-y: auto;
+}
+
+.screen.active {
+    display: block;
+}
+
+
+/* BACK BUTTON */
+
+.back {
+    position: fixed;
+
+    top: 18px;
+    left: 18px;
+
+    z-index: 5000;
+
+    padding: 9px 15px;
+
+    border-radius: 8px;
+
+    border: 1px solid #00ffff;
+
+    background:
+        rgba(3,4,7,0.85);
+
+    color: #00ffff;
+
+    cursor: pointer;
+
+    font-weight: bold;
+}
+
+
+/* =====================================================
+   PREMIUM SCREEN
+===================================================== */
+
+#premium {
+    padding: 75px 20px 30px;
+
+    text-align: center;
+}
+
+
+/* HEADINGS */
+
+.section-title {
+    color: #00ffff;
+
+    font-size: 1.8rem;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 8px;
+
+    text-shadow:
+        0 0 10px rgba(0,255,255,0.4);
+}
+
+
+.section-subtitle {
+    color: #8fa3b8;
+
+    margin-bottom: 30px;
+}
+
+
+/* PREMIUM CARD */
+
+.premium-card {
+
+    width: 100%;
+    max-width: 500px;
+
+    margin: 15px auto;
+
+    padding: 25px;
+
+    border-radius: 17px;
+
+    background:
+        rgba(5,8,15,0.9);
+
+    border:
+        1px solid rgba(0,255,255,0.35);
+
+    box-shadow:
+        0 0 20px rgba(0,255,255,0.1);
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.premium-card:hover {
+
+    border-color: #00ffff;
+
+    box-shadow:
+        0 0 25px rgba(0,255,255,0.25);
+
+    transform: translateY(-2px);
+}
+
+.premium-card:active {
+    transform: scale(0.98);
+}
+
+
+.premium-card h2 {
+    margin-top: 0;
+
+    color: #00ffff;
+}
+
+
+.premium-card p {
+
+    color: #aab7c5;
+
+    line-height: 1.6;
+}
+
+
+/* LOCK LABEL */
+
+.premium-label {
+
+    margin-top: 15px;
+
+    color: #ffd700;
+
+    font-weight: 800;
+
+    letter-spacing: 1px;
+}
+
+
+/* =====================================================
+   PREMIUM MESSAGE POPUP
+===================================================== */
+
+#premiumMessage {
+
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 9999;
+
+    background:
+        rgba(0,0,0,0.78);
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+}
+
+
+/* MESSAGE BOX */
+
+.message-box {
+
+    width: 100%;
+
+    max-width: 370px;
+
+    padding: 30px;
+
+    text-align: center;
+
+    border-radius: 18px;
+
+    background: #070b12;
+
+    border:
+        1px solid #ffd700;
+
+    box-shadow:
+        0 0 30px rgba(255,215,0,0.25);
+}
+
+
+.lock-icon {
+
+    font-size: 42px;
+
+    margin-bottom: 10px;
+}
+
+
+.message-box h2 {
+
+    color: #ffd700;
+
+    margin: 5px 0 12px;
+}
+
+
+.message-box p {
+
+    color: #b5c0cc;
+
+    line-height: 1.6;
+}
+
+
+.premium-price {
+
+    font-size: 28px;
+
+    font-weight: 900;
+
+    color: #ffd700;
+
+    margin: 15px;
+}
+
+
+/* OK BUTTON */
+
+.message-box button {
+
+    padding: 10px 25px;
+
+    border-radius: 8px;
+
+    border: 1px solid #00ffff;
+
+    background:
+        rgba(0,255,255,0.1);
+
+    color: #00ffff;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+/* =====================================================
+   ABOUT
+===================================================== */
+
+#about {
+
+    padding: 75px 20px;
+
+    overflow-y: auto;
+}
+
+
+.about-box {
+
+    width: 100%;
+
+    max-width: 650px;
+
+    margin: auto;
+
+    padding: 25px;
+
+    border-radius: 16px;
+
+    border:
+        1px solid rgba(0,255,255,0.3);
+
+    background:
+        rgba(5,8,15,0.85);
+
+    line-height: 1.7;
+}
+
+
+/* =====================================================
+   DARK MODE / LIGHT MODE
+===================================================== */
+
+body.light {
+
+    background: #edf5f8;
+
+    color: #10202b;
+}
+
+
+body.light #home {
+
+    background:
+        radial-gradient(
+            circle at 50% 15%,
+            rgba(0,180,220,0.12),
+            transparent 35%
+        ),
+        #edf5f8;
+}
+
+
+body.light .screen {
+
+    background: #edf5f8;
+}
+
+
+body.light .menu-btn,
+body.light .premium-card,
+body.light .about-box {
+
+    background: white;
+
+    color: #10202b;
+}
+
+
+body.light .menu-btn {
+
+    border-color: rgba(0,150,180,0.4);
+}
+
+
+body.light .premium-card p,
+body.light .about-box {
+
+    color: #304957;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 500px) {
+
+    .title {
+        font-size: 1.8rem;
+    }
+
+    .menu-btn {
+        padding: 17px;
+    }
+
+    .premium-card {
+        padding: 20px;
+    }
+}
+
+</style>
 </head>
+
+
 <body>
 
-    <div id="top-bar">
-        <img src="file_00000000325481faa9e72f433fdc296b.png" alt="App Logo" id="app-logo" onerror="this.style.display='none'">
-        <span id="tagline">What clouds hide we show</span>
+
+<!-- =====================================================
+     HOME
+===================================================== -->
+
+<div id="home">
+
+
+    <!-- YOUR LOGO -->
+
+    <img
+        class="logo"
+        src="file_00000000325481faa9e72f433fdc296b.png"
+        alt="Cosmo Vision Logo"
+        onerror="this.style.display='none'"
+    >
+
+
+    <!-- TITLE -->
+
+    <div class="title">
+        COSMO VISION
     </div>
 
-    <div id="loading">Syncing Data...</div>
+
+    <!-- TAGLINE -->
+
+    <div class="tagline">
+        WHAT CLOUDS HIDE WE SHOW
+    </div>
+
+
+    <!-- MENU -->
+
+    <div class="menu">
+
+
+        <!-- SKY MAP -->
+
+        <button
+            class="menu-btn"
+            onclick="openSkyMap()"
+        >
+
+            🌌 Sky Map
+
+            <span>
+                FREE →
+            </span>
+
+        </button>
+
+
+        <!-- PREMIUM -->
+
+        <button
+            class="menu-btn premium-btn"
+            onclick="openPremium()"
+        >
+
+            💎 Premium
+
+            <span>
+                ₹49 →
+            </span>
+
+        </button>
+
+
+        <!-- DARK MODE -->
+
+        <button
+            class="menu-btn"
+            onclick="toggleDarkMode()"
+        >
+
+            🌙 Dark Mode
+
+            <span>
+                ◐
+            </span>
+
+        </button>
+
+
+        <!-- ABOUT -->
+
+        <button
+            class="menu-btn"
+            onclick="openAbout()"
+        >
+
+            ℹ️ About
+
+            <span>
+                →
+            </span>
+
+        </button>
+
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     SKY MAP
+===================================================== -->
+
+<div
+    id="skyMapScreen"
+    class="screen"
+>
+
+
+    <button
+        class="back"
+        onclick="goHome()"
+    >
+        ← Home
+    </button>
+
+
+    <!--
+    =====================================================
+    YOUR EXISTING SKY MAP GOES HERE
+    =====================================================
+
+    This is where your existing code from:
+
+    "Stellarium Real-Time Cloud Sky Map"
+
+    should remain.
+
+    DO NOT replace your canvas,
+    cloud rendering,
+    weather API,
+    grid,
+    time slider,
+    GPS,
+    location controls, etc.
+
+    Your existing Sky Map is the actual working
+    Sky Map of Cosmo Vision.
+    -->
+
+
     <canvas id="skyCanvas"></canvas>
 
-    <div id="ui-panel">
-        <!-- Minimize/Expand Toggle -->
-        <div id="toggle-panel" title="Toggle Panel">
-            <span id="toggle-icon">▼</span>
-        </div>
-        
-        <!-- Collapsible Content -->
-        <div id="panel-content">
-            <div class="time-header">
-                <span id="time-display">Loading time...</span>
-                <span id="coords-display">Lat: 20.26° N | Lon: 75.77° E</span>
-            </div>
-            
-            <div class="slider-container">
-                <span style="font-size: 0.8em; color: #8fa3b8;">-24h</span>
-                <input type="range" id="timeSlider" min="-24" max="72" value="0" step="0.01">
-                <span style="font-size: 0.8em; color: #8fa3b8;">+72h</span>
-            </div>
-            <div class="slider-labels">
-                <span>Past 24 Hours</span>
-                <span>Live</span>
-                <span>Next 72 Hours</span>
-            </div>
 
-            <div id="weather-info">Cloud Cover: --</div>
+</div>
 
-            <div class="advanced-controls">
-                <div class="control-row">
-                    <span style="font-size: 0.8em; color: #8fa3b8; width: 60px;">Time:</span>
-                    <input type="datetime-local" id="manualTime" style="flex-grow: 1;">
-                </div>
-                
-                <div class="control-row">
-                    <span style="font-size: 0.8em; color: #8fa3b8; width: 60px;">Location:</span>
-                    <input type="number" id="latInput" placeholder="Lat" step="0.01" style="width: 75px;" value="20.26">
-                    <input type="number" id="lonInput" placeholder="Lon" step="0.01" style="width: 75px;" value="75.77">
-                    <button id="btnSetLoc">Set</button>
-                    <button id="btnAutoLoc" style="flex-grow: 1;">📍 Auto GPS</button>
-                </div>
-            </div>
+
+
+<!-- =====================================================
+     PREMIUM
+===================================================== -->
+
+<div
+    id="premium"
+    class="screen"
+>
+
+
+    <button
+        class="back"
+        onclick="goHome()"
+    >
+        ← Home
+    </button>
+
+
+    <h1 class="section-title">
+
+        💎 COSMO VISION PREMIUM
+
+    </h1>
+
+
+    <p class="section-subtitle">
+
+        Advanced astronomy features — ₹49
+
+    </p>
+
+
+
+    <!-- SKYMET -->
+
+    <div
+        class="premium-card"
+        onclick="showPremiumMessage()"
+    >
+
+        <h2>
+            ☁️ SkyMet
+        </h2>
+
+        <p>
+            Find out what to observe and
+            where to observe astronomical events.
+        </p>
+
+        <div class="premium-label">
+            🔒 PREMIUM FEATURE
         </div>
+
     </div>
 
+
+
+    <!-- QUIZ -->
+
+    <div
+        class="premium-card"
+        onclick="showPremiumMessage()"
+    >
+
+        <h2>
+            🧠 Quiz & Knowledge
+        </h2>
+
+        <p>
+            Test your astronomy knowledge
+            and learn interesting facts about space.
+        </p>
+
+        <div class="premium-label">
+            🔒 PREMIUM FEATURE
+        </div>
+
+    </div>
+
+
+</div>
+
+
+
+<!-- =====================================================
+     ABOUT
+===================================================== -->
+
+<div
+    id="about"
+    class="screen"
+>
+
+
+    <button
+        class="back"
+        onclick="goHome()"
+    >
+        ← Home
+    </button>
+
+
+    <h1 class="section-title">
+        ℹ️ About Cosmo Vision
+    </h1>
+
+
+    <div class="about-box">
+
+        <h2>
+            What Clouds Hide, We Show.
+        </h2>
+
+        <p>
+            Cosmo Vision is an astronomy-focused
+            platform designed to help astronomers
+            and astrophotographers understand
+            cloud conditions and plan their
+            observations.
+        </p>
+
+        <p>
+            Our Sky Map provides a visual
+            representation of cloud coverage
+            with respect to sky grids and lines.
+        </p>
+
+    </div>
+
+
+</div>
+
+
+
+<!-- =====================================================
+     PREMIUM MESSAGE
+===================================================== -->
+
+<div
+    id="premiumMessage"
+>
+
+
+    <div class="message-box">
+
+
+        <div class="lock-icon">
+            🔒
+        </div>
+
+
+        <h2>
+            Premium Required
+        </h2>
+
+
+        <p>
+            Please pay for Premium to
+            access this feature.
+        </p>
+
+
+        <div class="premium-price">
+            ₹49
+        </div>
+
+
+        <button
+            onclick="closePremiumMessage()"
+        >
+            OK
+        </button>
+
+
+    </div>
+
+</div>
+
+
+
 <script>
-    const canvas = document.getElementById('skyCanvas');
-    const ctx = canvas.getContext('2d');
-    const timeSlider = document.getElementById('timeSlider');
-    const timeDisplay = document.getElementById('time-display'); 
-    const coordsDisplay = document.getElementById('coords-display');
-    const weatherInfo = document.getElementById('weather-info');
-    const loading = document.getElementById('loading');
-    
-    const manualTimeInput = document.getElementById('manualTime');
-    const latInput = document.getElementById('latInput');
-    const lonInput = document.getElementById('lonInput');
-    const btnSetLoc = document.getElementById('btnSetLoc');
-    const btnAutoLoc = document.getElementById('btnAutoLoc');
-    
-    // Panel toggle logic
-    const uiPanel = document.getElementById('ui-panel');
-    const togglePanel = document.getElementById('toggle-panel');
-    const toggleIcon = document.getElementById('toggle-icon');
 
-    togglePanel.addEventListener('click', () => {
-        uiPanel.classList.toggle('minimized');
-        if (uiPanel.classList.contains('minimized')) {
-            toggleIcon.innerText = '▲';
-        } else {
-            toggleIcon.innerText = '▼';
-        }
-    });
+/* =====================================================
+   SCREEN CONTROL
+===================================================== */
 
-    let lat = 20.26;
-    let lon = 75.77;
 
-    let scale = 1;
-    let panX = window.innerWidth / 2;
-    let panY = window.innerHeight / 2;
-    let isDragging = false;
-    let startDragX, startDragY;
+function hideAllScreens() {
 
-    let weatherData = null;
-    let isUpdatingTimeInput = false;
+    document
+        .querySelectorAll(".screen")
+        .forEach(function(screen) {
 
-    function createDefaultWeatherData() {
-        const now = new Date();
-        const times = [];
-        for (let i = -24; i <= 72; i++) {
-            const d = new Date(now.getTime() + i * 3600000);
-            times.push(d.toISOString());
-        }
-        return {
-            time: times,
-            cloud_cover: Array(97).fill(30),
-            cloud_cover_low: Array(97).fill(10),
-            cloud_cover_mid: Array(97).fill(10),
-            cloud_cover_high: Array(97).fill(10),
-            is_day: Array(97).fill(1),
-            wind_direction_10m: Array(97).fill(0),
-            currentIndex: 24,
-            isError: false
-        };
-    }
+            screen.classList.remove("active");
 
-    function lerp(start, end, t) {
-        return start * (1 - t) + end * t;
-    }
-    function lerpColor(c1, c2, t) {
-        return [
-            Math.round(c1[0] + (c2[0] - c1[0]) * t),
-            Math.round(c1[1] + (c2[1] - c1[1]) * t),
-            Math.round(c1[2] + (c2[2] - c1[2]) * t)
-        ];
-    }
-
-    const cloudTextures = {};
-    function createCloudTexture(type) {
-        const pCanvas = document.createElement('canvas');
-        const pCtx = pCanvas.getContext('2d');
-        const size = type === 'low' ? 256 : (type === 'mid' ? 192 : 128);
-        pCanvas.width = size;
-        pCanvas.height = size;
-
-        const grad = pCtx.createRadialGradient(size/2, size/2, 5, size/2, size/2, size/2);
-        if (type === 'low') {
-            grad.addColorStop(0, 'rgba(240, 243, 248, 0.85)');
-            grad.addColorStop(0.4, 'rgba(200, 210, 225, 0.6)');
-            grad.addColorStop(0.8, 'rgba(150, 165, 185, 0.2)');
-            grad.addColorStop(1, 'rgba(150, 165, 185, 0)');
-        } else if (type === 'mid') {
-            grad.addColorStop(0, 'rgba(230, 235, 245, 0.7)');
-            grad.addColorStop(0.5, 'rgba(180, 195, 215, 0.4)');
-            grad.addColorStop(1, 'rgba(180, 195, 215, 0)');
-        } else { 
-            grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
-            grad.addColorStop(0.6, 'rgba(220, 230, 245, 0.2)');
-            grad.addColorStop(1, 'rgba(220, 230, 245, 0)');
-        }
-
-        pCtx.fillStyle = grad;
-        pCtx.beginPath();
-        pCtx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
-        pCtx.fill();
-        return pCanvas;
-    }
-
-    cloudTextures.low = createCloudTexture('low');
-    cloudTextures.mid = createCloudTexture('mid');
-    cloudTextures.high = createCloudTexture('high');
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        if (scale === 1 && panX === 0 && panY === 0) {
-            panX = canvas.width / 2;
-            panY = canvas.height / 2;
-        }
-        draw();
-    }
-    window.addEventListener('resize', resize);
-
-    async function fetchWeatherData() {
-        loading.innerText = "Syncing Data...";
-        loading.style.display = 'block';
-        try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day,wind_direction_10m&past_days=1&forecast_days=4&timezone=auto`;
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            if (data.error) throw new Error(data.reason);
-
-            weatherData = data.hourly;
-            weatherData.currentIndex = 24; 
-            
-            let latDir = lat >= 0 ? 'N' : 'S';
-            let lonDir = lon >= 0 ? 'E' : 'W';
-            coordsDisplay.innerText = `Lat: ${Math.abs(lat).toFixed(2)}° ${latDir} | Lon: ${Math.abs(lon).toFixed(2)}° ${lonDir}`;
-            
-            draw();
-        } catch (e) {
-            console.error("Fetch failed:", e);
-            if (!weatherData) weatherData = createDefaultWeatherData();
-            weatherData.isError = true;
-            draw();
-        }
-        loading.style.display = 'none';
-    }
-
-    function formatDMS(degrees) {
-        let isNeg = degrees < 0;
-        let absDeg = Math.abs(degrees);
-        let d = Math.floor(absDeg);
-        let minFloat = (absDeg - d) * 60;
-        let m = Math.floor(minFloat);
-        let secFloat = (minFloat - m) * 60;
-        let s = Math.floor(secFloat);
-        
-        let micro = Math.floor((secFloat - s) * 1000000);
-        let microStr = micro.toString().padStart(6, '0');
-
-        if (scale > 1000) {
-            return `${isNeg ? '-' : ''}${d}°${m}'${s}.${microStr}"`;
-        } else {
-            return `${isNeg ? '-' : ''}${d}°${m}'${s}"`;
-        }
-    }
-
-    let cloudField = [];
-    function generateProceduralCloudPositions() {
-        cloudField = [];
-        for (let i = 0; i < 400; i++) {
-            cloudField.push({
-                azimuth: Math.random() * Math.PI * 2,
-                altitude: Math.pow(Math.random(), 0.7) * 88,
-                scaleMod: 0.7 + Math.random() * 0.8,
-                layer: Math.random() < 0.4 ? 'low' : (Math.random() < 0.7 ? 'mid' : 'high')
-            });
-        }
-    }
-
-    function draw() {
-        if (!weatherData) return;
-
-        const exactOffset = parseFloat(timeSlider.value);
-        let idx0 = weatherData.currentIndex + Math.floor(exactOffset);
-        let idx1 = idx0 + 1;
-        let t = exactOffset - Math.floor(exactOffset);
-
-        if (idx0 < 0) idx0 = 0;
-        if (idx1 >= weatherData.time.length) idx1 = weatherData.time.length - 1;
-
-        let time0 = new Date(weatherData.time[idx0]).getTime();
-        let time1 = new Date(weatherData.time[idx1]).getTime();
-        let exactTime = new Date(lerp(time0, time1, t));
-        
-        timeDisplay.innerText = exactTime.toLocaleString([], {
-            weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
-        
-        if (!isUpdatingTimeInput) {
-            let tzOffset = exactTime.getTimezoneOffset() * 60000;
-            let localISOTime = (new Date(exactTime.getTime() - tzOffset)).toISOString().slice(0, 16);
-            manualTimeInput.value = localISOTime;
-        }
 
-        let cTotal = lerp(weatherData.cloud_cover[idx0], weatherData.cloud_cover[idx1], t);
-        let cLow = lerp(weatherData.cloud_cover_low[idx0], weatherData.cloud_cover_low[idx1], t);
-        let cMid = lerp(weatherData.cloud_cover_mid[idx0], weatherData.cloud_cover_mid[idx1], t);
-        let cHigh = lerp(weatherData.cloud_cover_high[idx0], weatherData.cloud_cover_high[idx1], t);
-        
-        weatherInfo.innerText = `Total Cloudiness: ${Math.round(cTotal)}% | Low: ${Math.round(cLow)}% | Mid: ${Math.round(cMid)}% | High: ${Math.round(cHigh)}%`;
+}
 
-        let w0 = weatherData.wind_direction_10m[idx0] || 0;
-        let w1 = weatherData.wind_direction_10m[idx1] || 0;
-        let wDiff = (w1 - w0 + 540) % 360 - 180; 
-        let windDir = (w0 + wDiff * t) * Math.PI / 180;
-        let dayRatio = lerp(weatherData.is_day[idx0], weatherData.is_day[idx1], t);
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const skyRadius = Math.min(canvas.width, canvas.height) * 0.42 * scale;
+/* =====================================================
+   HOME
+===================================================== */
 
-        ctx.save();
-        ctx.translate(panX, panY);
 
-        ctx.fillStyle = "#03040a"; 
-        ctx.fillRect(-panX, -panY, canvas.width, canvas.height);
+function goHome() {
 
-        ctx.beginPath();
-        ctx.arc(0, 0, skyRadius, 0, Math.PI * 2);
+    hideAllScreens();
 
-        let sCol1 = lerpColor([2, 5, 12], [20, 60, 90], dayRatio);
-        let sCol2 = lerpColor([4, 9, 22], [15, 45, 75], dayRatio);
-        let sCol3 = lerpColor([8, 15, 30], [25, 70, 110], dayRatio);
+    document
+        .getElementById("home")
+        .style.display = "flex";
 
-        let skyGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, skyRadius);
-        skyGrad.addColorStop(0, `rgb(${sCol1[0]},${sCol1[1]},${sCol1[2]})`);
-        skyGrad.addColorStop(0.7, `rgb(${sCol2[0]},${sCol2[1]},${sCol2[2]})`);
-        skyGrad.addColorStop(1, `rgb(${sCol3[0]},${sCol3[1]},${sCol3[2]})`);
-        
-        ctx.fillStyle = skyGrad;
-        ctx.fill();
+}
 
-        ctx.save();
-        ctx.clip();
 
-        ctx.lineWidth = 1;
-        ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 5;
-        
-        let gridR = 0, gridG = 255, gridB = 255;
-        let alpha = lerp(0.15, 0.4, dayRatio);
-        
-        ctx.strokeStyle = `rgba(${gridR}, ${gridG}, ${gridB}, ${alpha})`;
-        ctx.fillStyle = `rgba(${gridR}, ${gridG}, ${gridB}, ${alpha + 0.3})`;
-        ctx.font = "11px monospace";
+/* =====================================================
+   SKY MAP
+===================================================== */
 
-        let altStep = 15;
-        if (scale > 4) altStep = 5;
-        if (scale > 15) altStep = 1;
-        if (scale > 100) altStep = 1/60; 
 
-        for (let alt = 0; alt < 90; alt += altStep) {
-            let r = skyRadius * (1 - alt / 90);
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.stroke();
+function openSkyMap() {
 
-            if (scale > 1.5 || alt % 15 === 0) {
-                ctx.fillText(`Alt ${formatDMS(alt)}`, 6, -r + 12);
-            }
-        }
+    document
+        .getElementById("home")
+        .style.display = "none";
 
-        let azStep = altStep >= 1 ? 30 : 15;
-        for (let az = 0; az < 360; az += azStep) {
-            let angle = (az - 90) * Math.PI / 180;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            let edgeX = Math.cos(angle) * skyRadius;
-            let edgeY = Math.sin(angle) * skyRadius;
-            ctx.lineTo(edgeX, edgeY);
-            ctx.stroke();
+    hideAllScreens();
 
-            if (scale > 1.5 || az % 30 === 0) {
-                ctx.save();
-                ctx.translate(edgeX * 0.9, edgeY * 0.9); 
-                ctx.rotate(angle + Math.PI/2);
-                ctx.textAlign = "center";
-                ctx.fillText(`Az ${formatDMS(az)}`, 0, 0);
-                ctx.restore();
-            }
-        }
+    document
+        .getElementById("skyMapScreen")
+        .classList.add("active");
 
-        ctx.shadowBlur = 0;
 
-        let globalCloudAlpha = lerp(0.45, 0.85, dayRatio);
-        cloudField.forEach((c, idx) => {
-            let targetCover = c.layer === 'low' ? cLow : (c.layer === 'mid' ? cMid : cHigh);
-            let threshold = idx % 100;
-            let visibilityDiff = targetCover - threshold;
-            
-            if (visibilityDiff > 0) {
-                let localAlpha = visibilityDiff < 1 ? visibilityDiff : 1.0; 
-                let az = c.azimuth + windDir * 0.1;
-                let r = skyRadius * (1 - c.altitude / 90);
+    /*
+       IMPORTANT:
 
-                let x = Math.cos(az) * r;
-                let y = Math.sin(az) * r;
+       Your EXISTING Sky Map JavaScript
+       continues here.
 
-                let img = cloudTextures[c.layer];
-                let render
+       The existing map should not be replaced
+       by a screenshot.
+    */
+
+}
+
+
+/* =====================================================
+   PREMIUM
+===================================================== */
+
+
+function openPremium() {
+
+    document
+        .getElementById("home")
+        .style.display = "none";
+
+    hideAllScreens();
+
+    document
+        .getElementById("premium")
+        .classList.add("active");
+
+}
+
+
+/* =====================================================
+   PREMIUM MESSAGE
+===================================================== */
+
+
+function showPremiumMessage() {
+
+    document
+        .getElementById("premiumMessage")
+        .style.display = "flex";
+
+}
+
+
+function closePremiumMessage() {
+
+    document
+        .getElementById("premiumMessage")
+        .style.display = "none";
+
+}
+
+
+/* =====================================================
+   ABOUT
+===================================================== */
+
+
+function openAbout() {
+
+    document
+        .getElementById("home")
+        .style.display = "none";
+
+    hideAllScreens();
+
+    document
+        .getElementById("about")
+        .classList.add("active");
+
+}
+
+
+/* =====================================================
+   DARK MODE
+===================================================== */
+
+
+function toggleDarkMode() {
+
+    document
+        .body
+        .classList
+        .toggle("light");
+
+
+    localStorage.setItem(
+        "cosmoVisionLightMode",
+        document.body.classList.contains("light")
+    );
+
+}
+
+
+/* =====================================================
+   REMEMBER DARK/LIGHT MODE
+===================================================== */
+
+
+if (
+    localStorage.getItem("cosmoVisionLightMode")
+    === "true"
+) {
+
+    document
+        .body
+        .classList
+        .add("light");
+
+}
+
+</script>
+
+</body>
+    </html>
