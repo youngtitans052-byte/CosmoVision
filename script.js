@@ -1,150 +1,108 @@
-/* =====================================================
-   SCREEN CONTROL
-===================================================== */
+/* =========================================
+   COSMO VISION - SCRIPT.JS
+   ========================================= */
 
 
-function hideAllScreens() {
-
-    document
-        .querySelectorAll(".screen")
-        .forEach(function(screen) {
-
-            screen.classList.remove("active");
-
-        });
-
-}
-
-
-/* =====================================================
-   HOME
-===================================================== */
+/* ---------- SHOW HOME ---------- */
 
 function goHome() {
 
-    hideAllScreens();
+    document.querySelectorAll(".screen").forEach(function(screen) {
+        screen.classList.remove("active");
+    });
 
-    document
-        .getElementById("home")
-        .style.display = "flex";
-
+    document.getElementById("home").style.display = "flex";
 }
 
 
-/* =====================================================
-   SKY MAP
-===================================================== */
+/* ---------- SKY MAP ---------- */
 
 function openSkyMap() {
 
-    document
-        .getElementById("home")
-        .style.display = "none";
-
-    hideAllScreens();
-
-    document
-        .getElementById("skyMapScreen")
-        .classList.add("active");
+    window.location.href = "skymap.html";
 
 }
 
 
-/* =====================================================
-   PREMIUM
-===================================================== */
+/* ---------- PREMIUM ---------- */
 
 function openPremium() {
 
-    document
-        .getElementById("home")
-        .style.display = "none";
+    document.getElementById("home").style.display = "none";
 
-    hideAllScreens();
+    document.querySelectorAll(".screen").forEach(function(screen) {
+        screen.classList.remove("active");
+    });
 
-    document
-        .getElementById("premium")
-        .classList.add("active");
-
+    document.getElementById("premium").classList.add("active");
 }
 
 
-/* =====================================================
-   PREMIUM MESSAGE
-===================================================== */
+/* ---------- PREMIUM LOCK MESSAGE ---------- */
 
 function showPremiumMessage() {
 
-    document
-        .getElementById("premiumMessage")
-        .style.display = "flex";
+    document.getElementById("premiumMessage").style.display = "flex";
 
 }
 
 
 function closePremiumMessage() {
 
-    document
-        .getElementById("premiumMessage")
-        .style.display = "none";
+    document.getElementById("premiumMessage").style.display = "none";
 
 }
 
 
-/* =====================================================
-   ABOUT
-===================================================== */
+/* ---------- ABOUT ---------- */
 
 function openAbout() {
 
-    document
-        .getElementById("home")
-        .style.display = "none";
+    document.getElementById("home").style.display = "none";
 
-    hideAllScreens();
+    document.querySelectorAll(".screen").forEach(function(screen) {
+        screen.classList.remove("active");
+    });
 
-    document
-        .getElementById("about")
-        .classList.add("active");
-
+    document.getElementById("about").classList.add("active");
 }
 
 
-/* =====================================================
-   DARK MODE
-===================================================== */
+/* ---------- DARK MODE ---------- */
 
 function toggleDarkMode() {
 
-    document
-        .body
-        .classList
-        .toggle("light");
+    document.body.classList.toggle("light");
 
-    localStorage.setItem(
-        "cosmoVisionLightMode",
-        document
-            .body
-            .classList
-            .contains("light")
-    );
+    if (document.body.classList.contains("light")) {
 
+        localStorage.setItem(
+            "cosmoVisionTheme",
+            "light"
+        );
+
+    } else {
+
+        localStorage.setItem(
+            "cosmoVisionTheme",
+            "dark"
+        );
+
+    }
 }
 
 
-/* =====================================================
-   REMEMBER THEME
-===================================================== */
+/* ---------- LOAD SAVED THEME ---------- */
 
-if (
-    localStorage.getItem(
-        "cosmoVisionLightMode"
-    ) === "true"
-) {
+window.addEventListener("DOMContentLoaded", function() {
 
-    document
-        .body
-        .classList
-        .add("light");
+    const savedTheme =
+        localStorage.getItem("cosmoVisionTheme");
 
-}
+    if (savedTheme === "light") {
+
+        document.body.classList.add("light");
+
+    }
+
+});
