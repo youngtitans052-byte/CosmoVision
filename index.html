@@ -1,579 +1,24 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta name="viewport"
-      content="width=device-width,
-      initial-scale=1.0,
-      maximum-scale=1.0,
-      user-scalable=no">
+    <meta name="viewport"
+          content="width=device-width,
+          initial-scale=1.0,
+          maximum-scale=1.0,
+          user-scalable=no">
 
-<title>Cosmo Vision</title>
+    <title>Cosmo Vision</title>
 
-<style>
-
-/* =====================================================
-   BASIC
-===================================================== */
-
-* {
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-}
-
-html,
-body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    font-family: "Segoe UI", Arial, sans-serif;
-    background: #030407;
-    color: #e0e6ed;
-}
-
-
-/* =====================================================
-   HOME SCREEN
-===================================================== */
-
-#home {
-    width: 100%;
-    height: 100%;
-    min-height: 100vh;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
-    padding: 40px 20px;
-
-    overflow-y: auto;
-
-    background:
-        radial-gradient(
-            circle at 50% 15%,
-            rgba(0,255,255,0.12),
-            transparent 35%
-        ),
-        #030407;
-}
-
-
-/* LOGO */
-
-.logo {
-    width: 80px;
-    height: 80px;
-
-    border-radius: 50%;
-
-    object-fit: cover;
-
-    border: 2px solid #00ffff;
-
-    box-shadow:
-        0 0 15px rgba(0,255,255,0.5),
-        0 0 35px rgba(0,255,255,0.15);
-}
-
-
-/* TITLE */
-
-.title {
-    margin-top: 18px;
-
-    font-size: 2.2rem;
-    font-weight: 900;
-
-    letter-spacing: 4px;
-
-    color: #00ffff;
-
-    text-shadow:
-        0 0 10px rgba(0,255,255,0.7),
-        0 0 25px rgba(0,255,255,0.3);
-
-    text-align: center;
-}
-
-
-/* TAGLINE */
-
-.tagline {
-    margin-top: 7px;
-    margin-bottom: 35px;
-
-    color: #8fa3b8;
-
-    font-size: 0.8rem;
-
-    letter-spacing: 2px;
-
-    text-align: center;
-}
-
-
-/* =====================================================
-   MENU
-===================================================== */
-
-.menu {
-    width: 100%;
-    max-width: 500px;
-
-    display: flex;
-    flex-direction: column;
-
-    gap: 15px;
-}
-
-
-/* MENU BUTTON */
-
-.menu-btn {
-    width: 100%;
-
-    padding: 19px;
-
-    border-radius: 15px;
-
-    border: 1px solid rgba(0,255,255,0.35);
-
-    background:
-        rgba(5,8,15,0.9);
-
-    color: #e0e6ed;
-
-    font-size: 1rem;
-    font-weight: 700;
-
-    text-align: left;
-
-    cursor: pointer;
-
-    box-shadow:
-        0 0 15px rgba(0,255,255,0.08);
-
-    transition: 0.2s;
-}
-
-.menu-btn:hover {
-    border-color: #00ffff;
-
-    box-shadow:
-        0 0 25px rgba(0,255,255,0.25);
-
-    transform: translateY(-2px);
-}
-
-.menu-btn:active {
-    transform: scale(0.98);
-}
-
-.menu-btn span {
-    float: right;
-    color: #00ffff;
-}
-
-
-/* PREMIUM BUTTON */
-
-.premium-btn {
-    border-color: rgba(255,215,0,0.5);
-
-    box-shadow:
-        0 0 15px rgba(255,215,0,0.08);
-}
-
-.premium-btn span {
-    color: #ffd700;
-}
-
-
-/* =====================================================
-   SCREENS
-===================================================== */
-
-.screen {
-    display: none;
-
-    width: 100%;
-    height: 100%;
-
-    background: #030407;
-
-    overflow-y: auto;
-}
-
-.screen.active {
-    display: block;
-}
-
-
-/* BACK BUTTON */
-
-.back {
-    position: fixed;
-
-    top: 18px;
-    left: 18px;
-
-    z-index: 5000;
-
-    padding: 9px 15px;
-
-    border-radius: 8px;
-
-    border: 1px solid #00ffff;
-
-    background:
-        rgba(3,4,7,0.85);
-
-    color: #00ffff;
-
-    cursor: pointer;
-
-    font-weight: bold;
-}
-
-
-/* =====================================================
-   PREMIUM SCREEN
-===================================================== */
-
-#premium {
-    padding: 75px 20px 30px;
-
-    text-align: center;
-}
-
-
-/* HEADINGS */
-
-.section-title {
-    color: #00ffff;
-
-    font-size: 1.8rem;
-
-    letter-spacing: 2px;
-
-    margin-bottom: 8px;
-
-    text-shadow:
-        0 0 10px rgba(0,255,255,0.4);
-}
-
-
-.section-subtitle {
-    color: #8fa3b8;
-
-    margin-bottom: 30px;
-}
-
-
-/* PREMIUM CARD */
-
-.premium-card {
-
-    width: 100%;
-    max-width: 500px;
-
-    margin: 15px auto;
-
-    padding: 25px;
-
-    border-radius: 17px;
-
-    background:
-        rgba(5,8,15,0.9);
-
-    border:
-        1px solid rgba(0,255,255,0.35);
-
-    box-shadow:
-        0 0 20px rgba(0,255,255,0.1);
-
-    text-align: left;
-
-    cursor: pointer;
-
-    transition: 0.2s;
-}
-
-.premium-card:hover {
-
-    border-color: #00ffff;
-
-    box-shadow:
-        0 0 25px rgba(0,255,255,0.25);
-
-    transform: translateY(-2px);
-}
-
-.premium-card:active {
-    transform: scale(0.98);
-}
-
-
-.premium-card h2 {
-    margin-top: 0;
-
-    color: #00ffff;
-}
-
-
-.premium-card p {
-
-    color: #aab7c5;
-
-    line-height: 1.6;
-}
-
-
-/* LOCK LABEL */
-
-.premium-label {
-
-    margin-top: 15px;
-
-    color: #ffd700;
-
-    font-weight: 800;
-
-    letter-spacing: 1px;
-}
-
-
-/* =====================================================
-   PREMIUM MESSAGE POPUP
-===================================================== */
-
-#premiumMessage {
-
-    display: none;
-
-    position: fixed;
-
-    inset: 0;
-
-    z-index: 9999;
-
-    background:
-        rgba(0,0,0,0.78);
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 20px;
-}
-
-
-/* MESSAGE BOX */
-
-.message-box {
-
-    width: 100%;
-
-    max-width: 370px;
-
-    padding: 30px;
-
-    text-align: center;
-
-    border-radius: 18px;
-
-    background: #070b12;
-
-    border:
-        1px solid #ffd700;
-
-    box-shadow:
-        0 0 30px rgba(255,215,0,0.25);
-}
-
-
-.lock-icon {
-
-    font-size: 42px;
-
-    margin-bottom: 10px;
-}
-
-
-.message-box h2 {
-
-    color: #ffd700;
-
-    margin: 5px 0 12px;
-}
-
-
-.message-box p {
-
-    color: #b5c0cc;
-
-    line-height: 1.6;
-}
-
-
-.premium-price {
-
-    font-size: 28px;
-
-    font-weight: 900;
-
-    color: #ffd700;
-
-    margin: 15px;
-}
-
-
-/* OK BUTTON */
-
-.message-box button {
-
-    padding: 10px 25px;
-
-    border-radius: 8px;
-
-    border: 1px solid #00ffff;
-
-    background:
-        rgba(0,255,255,0.1);
-
-    color: #00ffff;
-
-    font-weight: bold;
-
-    cursor: pointer;
-}
-
-
-/* =====================================================
-   ABOUT
-===================================================== */
-
-#about {
-
-    padding: 75px 20px;
-
-    overflow-y: auto;
-}
-
-
-.about-box {
-
-    width: 100%;
-
-    max-width: 650px;
-
-    margin: auto;
-
-    padding: 25px;
-
-    border-radius: 16px;
-
-    border:
-        1px solid rgba(0,255,255,0.3);
-
-    background:
-        rgba(5,8,15,0.85);
-
-    line-height: 1.7;
-}
-
-
-/* =====================================================
-   DARK MODE / LIGHT MODE
-===================================================== */
-
-body.light {
-
-    background: #edf5f8;
-
-    color: #10202b;
-}
-
-
-body.light #home {
-
-    background:
-        radial-gradient(
-            circle at 50% 15%,
-            rgba(0,180,220,0.12),
-            transparent 35%
-        ),
-        #edf5f8;
-}
-
-
-body.light .screen {
-
-    background: #edf5f8;
-}
-
-
-body.light .menu-btn,
-body.light .premium-card,
-body.light .about-box {
-
-    background: white;
-
-    color: #10202b;
-}
-
-
-body.light .menu-btn {
-
-    border-color: rgba(0,150,180,0.4);
-}
-
-
-body.light .premium-card p,
-body.light .about-box {
-
-    color: #304957;
-}
-
-
-/* =====================================================
-   MOBILE
-===================================================== */
-
-@media (max-width: 500px) {
-
-    .title {
-        font-size: 1.8rem;
-    }
-
-    .menu-btn {
-        padding: 17px;
-    }
-
-    .premium-card {
-        padding: 20px;
-    }
-}
-
-</style>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 
 <body>
 
-
-<!-- =====================================================
-     HOME
-===================================================== -->
+<!-- ================= HOME ================= -->
 
 <div id="home">
-
-
-    <!-- YOUR LOGO -->
 
     <img
         class="logo"
@@ -582,196 +27,84 @@ body.light .about-box {
         onerror="this.style.display='none'"
     >
 
-
-    <!-- TITLE -->
-
     <div class="title">
         COSMO VISION
     </div>
-
-
-    <!-- TAGLINE -->
 
     <div class="tagline">
         WHAT CLOUDS HIDE WE SHOW
     </div>
 
-
-    <!-- MENU -->
-
     <div class="menu">
 
-
-        <!-- SKY MAP -->
-
-        <button
-            class="menu-btn"
-            onclick="openSkyMap()"
-        >
-
+        <button class="menu-btn" onclick="openSkyMap()">
             🌌 Sky Map
-
-            <span>
-                FREE →
-            </span>
-
+            <span>FREE →</span>
         </button>
 
-
-        <!-- PREMIUM -->
-
-        <button
-            class="menu-btn premium-btn"
-            onclick="openPremium()"
-        >
-
+        <button class="menu-btn premium-btn"
+                onclick="openPremium()">
             💎 Premium
-
-            <span>
-                ₹49 →
-            </span>
-
+            <span>₹49 →</span>
         </button>
 
-
-        <!-- DARK MODE -->
-
-        <button
-            class="menu-btn"
-            onclick="toggleDarkMode()"
-        >
-
+        <button class="menu-btn"
+                onclick="toggleDarkMode()">
             🌙 Dark Mode
-
-            <span>
-                ◐
-            </span>
-
+            <span>◐</span>
         </button>
 
-
-        <!-- ABOUT -->
-
-        <button
-            class="menu-btn"
-            onclick="openAbout()"
-        >
-
+        <button class="menu-btn"
+                onclick="openAbout()">
             ℹ️ About
-
-            <span>
-                →
-            </span>
-
+            <span>→</span>
         </button>
-
 
     </div>
 
 </div>
 
 
-
-<!-- =====================================================
-     SKY MAP
-===================================================== -->
 <!-- ================= SKY MAP ================= -->
 
 <div id="skyMapScreen" class="screen">
 
-    <button class="back" onclick="goHome()">← Home</button>
+    <button class="back" onclick="goHome()">
+        ← Home
+    </button>
 
     <iframe
         src="https://youngtitans052-byte.github.io/CosmoVision/"
         title="Cosmo Vision Sky Map"
-        style="
-            position:absolute;
-            top:0;
-            left:0;
-            width:100%;
-            height:100%;
-            border:none;
-            background:#030407;
-        ">
+        class="sky-map-frame">
     </iframe>
 
 </div>
 
 
-    <!--
-    =====================================================
-    YOUR EXISTING SKY MAP GOES HERE
-    =====================================================
+<!-- ================= PREMIUM ================= -->
 
-    This is where your existing code from:
+<div id="premium" class="screen">
 
-    "Stellarium Real-Time Cloud Sky Map"
-
-    should remain.
-
-    DO NOT replace your canvas,
-    cloud rendering,
-    weather API,
-    grid,
-    time slider,
-    GPS,
-    location controls, etc.
-
-    Your existing Sky Map is the actual working
-    Sky Map of Cosmo Vision.
-    -->
-
-
-    <canvas id="skyCanvas"></canvas>
-
-
-</div>
-
-
-
-<!-- =====================================================
-     PREMIUM
-===================================================== -->
-
-<div
-    id="premium"
-    class="screen"
->
-
-
-    <button
-        class="back"
-        onclick="goHome()"
-    >
+    <button class="back" onclick="goHome()">
         ← Home
     </button>
 
-
     <h1 class="section-title">
-
         💎 COSMO VISION PREMIUM
-
     </h1>
 
-
     <p class="section-subtitle">
-
         Advanced astronomy features — ₹49
-
     </p>
-
 
 
     <!-- SKYMET -->
 
-    <div
-        class="premium-card"
-        onclick="showPremiumMessage()"
-    >
+    <div class="premium-card"
+         onclick="showPremiumMessage()">
 
-        <h2>
-            ☁️ SkyMet
-        </h2>
+        <h2>☁️ SkyMet</h2>
 
         <p>
             Find out what to observe and
@@ -785,17 +118,12 @@ body.light .about-box {
     </div>
 
 
-
     <!-- QUIZ -->
 
-    <div
-        class="premium-card"
-        onclick="showPremiumMessage()"
-    >
+    <div class="premium-card"
+         onclick="showPremiumMessage()">
 
-        <h2>
-            🧠 Quiz & Knowledge
-        </h2>
+        <h2>🧠 Quiz & Knowledge</h2>
 
         <p>
             Test your astronomy knowledge
@@ -808,33 +136,20 @@ body.light .about-box {
 
     </div>
 
-
 </div>
 
 
+<!-- ================= ABOUT ================= -->
 
-<!-- =====================================================
-     ABOUT
-===================================================== -->
+<div id="about" class="screen">
 
-<div
-    id="about"
-    class="screen"
->
-
-
-    <button
-        class="back"
-        onclick="goHome()"
-    >
+    <button class="back" onclick="goHome()">
         ← Home
     </button>
-
 
     <h1 class="section-title">
         ℹ️ About Cosmo Vision
     </h1>
-
 
     <div class="about-box">
 
@@ -858,226 +173,42 @@ body.light .about-box {
 
     </div>
 
-
 </div>
 
 
+<!-- ================= PREMIUM MESSAGE ================= -->
 
-<!-- =====================================================
-     PREMIUM MESSAGE
-===================================================== -->
-
-<div
-    id="premiumMessage"
->
-
+<div id="premiumMessage">
 
     <div class="message-box">
-
 
         <div class="lock-icon">
             🔒
         </div>
 
-
         <h2>
             Premium Required
         </h2>
-
 
         <p>
             Please pay for Premium to
             access this feature.
         </p>
 
-
         <div class="premium-price">
             ₹49
         </div>
 
-
-        <button
-            onclick="closePremiumMessage()"
-        >
+        <button onclick="closePremiumMessage()">
             OK
         </button>
-
 
     </div>
 
 </div>
 
 
-
-<script>
-
-/* =====================================================
-   SCREEN CONTROL
-===================================================== */
-
-
-function hideAllScreens() {
-
-    document
-        .querySelectorAll(".screen")
-        .forEach(function(screen) {
-
-            screen.classList.remove("active");
-
-        });
-
-}
-
-
-/* =====================================================
-   HOME
-===================================================== */
-
-
-function goHome() {
-
-    hideAllScreens();
-
-    document
-        .getElementById("home")
-        .style.display = "flex";
-
-}
-
-
-/* =====================================================
-   SKY MAP
-===================================================== */
-
-
-function openSkyMap() {
-
-    document
-        .getElementById("home")
-        .style.display = "none";
-
-    hideAllScreens();
-
-    document
-        .getElementById("skyMapScreen")
-        .classList.add("active");
-
-
-    /*
-       IMPORTANT:
-
-       Your EXISTING Sky Map JavaScript
-       continues here.
-
-       The existing map should not be replaced
-       by a screenshot.
-    */
-
-}
-
-
-/* =====================================================
-   PREMIUM
-===================================================== */
-
-
-function openPremium() {
-
-    document
-        .getElementById("home")
-        .style.display = "none";
-
-    hideAllScreens();
-
-    document
-        .getElementById("premium")
-        .classList.add("active");
-
-}
-
-
-/* =====================================================
-   PREMIUM MESSAGE
-===================================================== */
-
-
-function showPremiumMessage() {
-
-    document
-        .getElementById("premiumMessage")
-        .style.display = "flex";
-
-}
-
-
-function closePremiumMessage() {
-
-    document
-        .getElementById("premiumMessage")
-        .style.display = "none";
-
-}
-
-
-/* =====================================================
-   ABOUT
-===================================================== */
-
-
-function openAbout() {
-
-    document
-        .getElementById("home")
-        .style.display = "none";
-
-    hideAllScreens();
-
-    document
-        .getElementById("about")
-        .classList.add("active");
-
-}
-
-
-/* =====================================================
-   DARK MODE
-===================================================== */
-
-
-function toggleDarkMode() {
-
-    document
-        .body
-        .classList
-        .toggle("light");
-
-
-    localStorage.setItem(
-        "cosmoVisionLightMode",
-        document.body.classList.contains("light")
-    );
-
-}
-
-
-/* =====================================================
-   REMEMBER DARK/LIGHT MODE
-===================================================== */
-
-
-if (
-    localStorage.getItem("cosmoVisionLightMode")
-    === "true"
-) {
-
-    document
-        .body
-        .classList
-        .add("light");
-
-}
-
-</script>
+<script src="script.js"></script>
 
 </body>
-    </html>
+ </html>
