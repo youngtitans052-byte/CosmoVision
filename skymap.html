@@ -1,574 +1,1291 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stellarium Real-Time Cloud Sky Map</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            background-color: #030407;
-            color: #e0e6ed;
-            touch-action: none; 
-        }
-        canvas {
-            display: block;
-            cursor: grab;
-            width: 100vw;
-            height: 100vh;
-        }
-        canvas:active {
-            cursor: grabbing;
-        }
-        
-        /* Top Bar */
-        #top-bar {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(5, 8, 15, 0.85);
-            border: 1px solid rgba(0, 255, 255, 0.4);
-            padding: 8px 20px;
-            border-radius: 40px;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            z-index: 20;
-            white-space: nowrap;
-        }
-        #app-logo {
-            height: 32px;
-            width: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 1px solid #00ffff;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
-        }
-        #tagline {
-            font-size: 0.9em;
-            font-weight: 700;
-            color: #00ffff;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-        #ui-panel {
-            position: absolute;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(5, 8, 15, 0.85);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            color: #d1dce5;
-            padding: 16px;
-            border-radius: 12px;
-            width: 95%;
-            max-width: 680px;
-            box-shadow: 0 0 25px rgba(0, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            z-index: 10;
-            transition: padding 0.3s ease;
-        }
-        
-        /* Panel Toggle Button */
-        #toggle-panel {
-            text-align: center;
-            cursor: pointer;
-            color: #00ffff;
-            margin-top: -10px;
-            margin-bottom: 12px;
-            font-size: 1.1em;
-            padding: 4px;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-        #toggle-panel:hover {
-            opacity: 1;
-        }
-        
-        /* Minimized State */
-        #ui-panel.minimized #panel-content {
-            display: none;
-        }
-        #ui-panel.minimized {
-            padding-bottom: 10px;
-        }
-        #ui-panel.minimized #toggle-panel {
-            margin-bottom: 0;
-        }
+<title>Cosmo Vision - Sky Map</title>
 
-        .time-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-            padding-bottom: 6px;
-        }
-        #time-display {
-            font-size: 1.15em;
-            font-weight: 600;
-            color: #00ffff;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
-            font-family: monospace;
-        }
-        #coords-display {
-            font-size: 0.85em;
-            color: #8fa3b8;
-            font-family: monospace;
-        }
-        .slider-container {
-            margin: 12px 0 6px 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        input[type="range"] {
-            flex-grow: 1;
-            accent-color: #00ffff;
-            cursor: pointer;
-        }
-        .slider-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75em;
-            color: #64748b;
-        }
-        #weather-info {
-            font-size: 0.85em;
-            margin-top: 6px;
-            color: #94a3b8;
-        }
+<style>
+*{
+    box-sizing:border-box;
+    user-select:none;
+    -webkit-user-select:none;
+}
 
-        .advanced-controls {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px dashed rgba(0, 255, 255, 0.2);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .control-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        input[type="number"], input[type="datetime-local"] {
-            background: rgba(3, 4, 7, 0.8);
-            color: #00ffff;
-            border: 1px solid #00ffff;
-            border-radius: 4px;
-            padding: 6px;
-            font-family: monospace;
-            font-size: 0.85em;
-        }
-        button {
-            background: rgba(0, 255, 255, 0.1);
-            color: #00ffff;
-            border: 1px solid #00ffff;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85em;
-            transition: all 0.2s;
-        }
-        button:active {
-            background: #00ffff;
-            color: #000;
-        }
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#030407;
+    color:#e0e6ed;
+    font-family:Segoe UI,Arial,sans-serif;
+    touch-action:none;
+}
 
-        #loading {
-            position: absolute;
-            top: 85px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(5, 8, 15, 0.85);
-            border: 1px solid rgba(0, 255, 255, 0.4);
-            color: #00ffff;
-            padding: 10px 18px;
-            border-radius: 6px;
-            font-size: 0.9em;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 100;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
-            display: none;
-        }
-    </style>
+canvas{
+    display:block;
+    width:100vw;
+    height:100vh;
+    cursor:grab;
+}
+
+canvas:active{
+    cursor:grabbing;
+}
+
+/* TOP BAR */
+
+#top-bar{
+    position:absolute;
+    top:18px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:20;
+
+    background:rgba(5,8,15,.9);
+    border:1px solid rgba(0,255,255,.4);
+    border-radius:40px;
+
+    padding:9px 18px;
+
+    color:#00ffff;
+    font-weight:700;
+    letter-spacing:1.5px;
+
+    box-shadow:0 0 20px rgba(0,255,255,.2);
+
+    white-space:nowrap;
+}
+
+/* LOADING */
+
+#loading{
+    display:none;
+
+    position:absolute;
+    top:70px;
+    left:50%;
+    transform:translateX(-50%);
+
+    z-index:30;
+
+    padding:8px 15px;
+
+    background:rgba(5,8,15,.9);
+    border:1px solid rgba(0,255,255,.4);
+    border-radius:7px;
+
+    color:#00ffff;
+    font-size:13px;
+}
+
+/* CONTROL PANEL */
+
+#ui-panel{
+    position:absolute;
+
+    bottom:18px;
+    left:50%;
+    transform:translateX(-50%);
+
+    width:95%;
+    max-width:720px;
+
+    z-index:20;
+
+    background:rgba(5,8,15,.9);
+
+    border:1px solid rgba(0,255,255,.3);
+
+    border-radius:14px;
+
+    padding:15px;
+
+    backdrop-filter:blur(10px);
+
+    box-shadow:
+        0 0 25px rgba(0,255,255,.15);
+}
+
+#toggle-panel{
+    text-align:center;
+
+    color:#00ffff;
+
+    cursor:pointer;
+
+    margin:-7px 0 8px;
+
+    font-size:17px;
+}
+
+#ui-panel.minimized #panel-content{
+    display:none;
+}
+
+.time-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    gap:10px;
+
+    padding-bottom:7px;
+
+    border-bottom:
+        1px solid rgba(0,255,255,.2);
+}
+
+#time-display{
+    color:#00ffff;
+
+    font-family:monospace;
+
+    font-size:15px;
+
+    font-weight:bold;
+}
+
+#coords-display{
+    color:#8fa3b8;
+
+    font-family:monospace;
+
+    font-size:12px;
+}
+
+.slider-container{
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-top:12px;
+}
+
+input[type="range"]{
+    flex:1;
+
+    accent-color:#00ffff;
+}
+
+.slider-labels{
+    display:flex;
+
+    justify-content:space-between;
+
+    color:#64748b;
+
+    font-size:11px;
+}
+
+#weather-info{
+    margin-top:7px;
+
+    color:#94a3b8;
+
+    font-size:13px;
+}
+
+.controls{
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:7px;
+
+    align-items:center;
+
+    margin-top:11px;
+
+    padding-top:11px;
+
+    border-top:
+        1px dashed rgba(0,255,255,.2);
+}
+
+.small-label{
+    color:#8fa3b8;
+
+    font-size:12px;
+}
+
+input[type="number"]{
+    width:80px;
+
+    padding:7px;
+
+    background:#030407;
+
+    color:#00ffff;
+
+    border:
+        1px solid #00ffff;
+
+    border-radius:5px;
+
+    font-family:monospace;
+}
+
+button{
+    padding:7px 12px;
+
+    background:
+        rgba(0,255,255,.1);
+
+    color:#00ffff;
+
+    border:
+        1px solid #00ffff;
+
+    border-radius:5px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+}
+
+button:active{
+    background:#00ffff;
+
+    color:#000;
+}
+</style>
 </head>
+
 <body>
 
-    <div id="top-bar">
-        <img src="file_00000000325481faa9e72f433fdc296b.png" alt="App Logo" id="app-logo" onerror="this.style.display='none'">
-        <span id="tagline">What clouds hide we show</span>
+<div id="top-bar">
+    🌌 COSMO VISION — SKY MAP
+</div>
+
+<div id="loading">
+    Syncing weather data...
+</div>
+
+<canvas id="skyCanvas"></canvas>
+
+<div id="ui-panel">
+
+    <div id="toggle-panel">
+        ▼
     </div>
 
-    <div id="loading">Syncing Data...</div>
-    <canvas id="skyCanvas"></canvas>
+    <div id="panel-content">
 
-    <div id="ui-panel">
-        <!-- Minimize/Expand Toggle -->
-        <div id="toggle-panel" title="Toggle Panel">
-            <span id="toggle-icon">▼</span>
+        <div class="time-header">
+
+            <span id="time-display">
+                Loading time...
+            </span>
+
+            <span id="coords-display">
+                Lat: 20.26° N | Lon: 75.77° E
+            </span>
+
         </div>
-        
-        <!-- Collapsible Content -->
-        <div id="panel-content">
-            <div class="time-header">
-                <span id="time-display">Loading time...</span>
-                <span id="coords-display">Lat: 20.26° N | Lon: 75.77° E</span>
-            </div>
-            
-            <div class="slider-container">
-                <span style="font-size: 0.8em; color: #8fa3b8;">-24h</span>
-                <input type="range" id="timeSlider" min="-24" max="72" value="0" step="0.01">
-                <span style="font-size: 0.8em; color: #8fa3b8;">+72h</span>
-            </div>
-            <div class="slider-labels">
-                <span>Past 24 Hours</span>
-                <span>Live</span>
-                <span>Next 72 Hours</span>
-            </div>
 
-            <div id="weather-info">Cloud Cover: --</div>
 
-            <div class="advanced-controls">
-                <div class="control-row">
-                    <span style="font-size: 0.8em; color: #8fa3b8; width: 60px;">Time:</span>
-                    <input type="datetime-local" id="manualTime" style="flex-grow: 1;">
-                </div>
-                
-                <div class="control-row">
-                    <span style="font-size: 0.8em; color: #8fa3b8; width: 60px;">Location:</span>
-                    <input type="number" id="latInput" placeholder="Lat" step="0.01" style="width: 75px;" value="20.26">
-                    <input type="number" id="lonInput" placeholder="Lon" step="0.01" style="width: 75px;" value="75.77">
-                    <button id="btnSetLoc">Set</button>
-                    <button id="btnAutoLoc" style="flex-grow: 1;">📍 Auto GPS</button>
-                </div>
-            </div>
+        <div class="slider-container">
+
+            <span class="small-label">
+                −24h
+            </span>
+
+            <input
+                type="range"
+                id="timeSlider"
+                min="-24"
+                max="72"
+                value="0"
+                step="0.01"
+            >
+
+            <span class="small-label">
+                +72h
+            </span>
+
         </div>
+
+
+        <div class="slider-labels">
+
+            <span>
+                Past 24 Hours
+            </span>
+
+            <span>
+                Live
+            </span>
+
+            <span>
+                Next 72 Hours
+            </span>
+
+        </div>
+
+
+        <div id="weather-info">
+            Cloud Cover: --
+        </div>
+
+
+        <div class="controls">
+
+            <span class="small-label">
+                Location:
+            </span>
+
+            <input
+                type="number"
+                id="latInput"
+                value="20.26"
+                step="0.01"
+                placeholder="Lat"
+            >
+
+            <input
+                type="number"
+                id="lonInput"
+                value="75.77"
+                step="0.01"
+                placeholder="Lon"
+            >
+
+            <button id="btnSetLoc">
+                Set
+            </button>
+
+            <button id="btnAutoLoc">
+                📍 Auto GPS
+            </button>
+
+        </div>
+
     </div>
+
+</div>
+
 
 <script>
-    const canvas = document.getElementById('skyCanvas');
-    const ctx = canvas.getContext('2d');
-    const timeSlider = document.getElementById('timeSlider');
-    const timeDisplay = document.getElementById('time-display'); 
-    const coordsDisplay = document.getElementById('coords-display');
-    const weatherInfo = document.getElementById('weather-info');
-    const loading = document.getElementById('loading');
-    
-    const manualTimeInput = document.getElementById('manualTime');
-    const latInput = document.getElementById('latInput');
-    const lonInput = document.getElementById('lonInput');
-    const btnSetLoc = document.getElementById('btnSetLoc');
-    const btnAutoLoc = document.getElementById('btnAutoLoc');
-    
-    // Panel toggle logic
-    const uiPanel = document.getElementById('ui-panel');
-    const togglePanel = document.getElementById('toggle-panel');
-    const toggleIcon = document.getElementById('toggle-icon');
 
-    togglePanel.addEventListener('click', () => {
-        uiPanel.classList.toggle('minimized');
-        if (uiPanel.classList.contains('minimized')) {
-            toggleIcon.innerText = '▲';
-        } else {
-            toggleIcon.innerText = '▼';
-        }
-    });
+/* =====================================================
+   COSMO VISION SKY MAP
+   ===================================================== */
 
-    let lat = 20.26;
-    let lon = 75.77;
 
-    let scale = 1;
-    let panX = window.innerWidth / 2;
-    let panY = window.innerHeight / 2;
-    let isDragging = false;
-    let startDragX, startDragY;
+const canvas =
+    document.getElementById("skyCanvas");
 
-    let weatherData = null;
-    let isUpdatingTimeInput = false;
+const ctx =
+    canvas.getContext("2d");
 
-    function createDefaultWeatherData() {
-        const now = new Date();
-        const times = [];
-        for (let i = -24; i <= 72; i++) {
-            const d = new Date(now.getTime() + i * 3600000);
-            times.push(d.toISOString());
-        }
-        return {
-            time: times,
-            cloud_cover: Array(97).fill(30),
-            cloud_cover_low: Array(97).fill(10),
-            cloud_cover_mid: Array(97).fill(10),
-            cloud_cover_high: Array(97).fill(10),
-            is_day: Array(97).fill(1),
-            wind_direction_10m: Array(97).fill(0),
-            currentIndex: 24,
-            isError: false
-        };
-    }
 
-    function lerp(start, end, t) {
-        return start * (1 - t) + end * t;
-    }
-    function lerpColor(c1, c2, t) {
-        return [
-            Math.round(c1[0] + (c2[0] - c1[0]) * t),
-            Math.round(c1[1] + (c2[1] - c1[1]) * t),
-            Math.round(c1[2] + (c2[2] - c1[2]) * t)
-        ];
-    }
+const timeSlider =
+    document.getElementById("timeSlider");
 
-    const cloudTextures = {};
-    function createCloudTexture(type) {
-        const pCanvas = document.createElement('canvas');
-        const pCtx = pCanvas.getContext('2d');
-        const size = type === 'low' ? 256 : (type === 'mid' ? 192 : 128);
-        pCanvas.width = size;
-        pCanvas.height = size;
+const timeDisplay =
+    document.getElementById("time-display");
 
-        const grad = pCtx.createRadialGradient(size/2, size/2, 5, size/2, size/2, size/2);
-        if (type === 'low') {
-            grad.addColorStop(0, 'rgba(240, 243, 248, 0.85)');
-            grad.addColorStop(0.4, 'rgba(200, 210, 225, 0.6)');
-            grad.addColorStop(0.8, 'rgba(150, 165, 185, 0.2)');
-            grad.addColorStop(1, 'rgba(150, 165, 185, 0)');
-        } else if (type === 'mid') {
-            grad.addColorStop(0, 'rgba(230, 235, 245, 0.7)');
-            grad.addColorStop(0.5, 'rgba(180, 195, 215, 0.4)');
-            grad.addColorStop(1, 'rgba(180, 195, 215, 0)');
-        } else { 
-            grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
-            grad.addColorStop(0.6, 'rgba(220, 230, 245, 0.2)');
-            grad.addColorStop(1, 'rgba(220, 230, 245, 0)');
-        }
+const coordsDisplay =
+    document.getElementById("coords-display");
 
-        pCtx.fillStyle = grad;
-        pCtx.beginPath();
-        pCtx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
-        pCtx.fill();
-        return pCanvas;
-    }
+const weatherInfo =
+    document.getElementById("weather-info");
 
-    cloudTextures.low = createCloudTexture('low');
-    cloudTextures.mid = createCloudTexture('mid');
-    cloudTextures.high = createCloudTexture('high');
+const loading =
+    document.getElementById("loading");
 
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        if (scale === 1 && panX === 0 && panY === 0) {
-            panX = canvas.width / 2;
-            panY = canvas.height / 2;
-        }
-        draw();
-    }
-    window.addEventListener('resize', resize);
+const latInput =
+    document.getElementById("latInput");
 
-    async function fetchWeatherData() {
-        loading.innerText = "Syncing Data...";
-        loading.style.display = 'block';
-        try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day,wind_direction_10m&past_days=1&forecast_days=4&timezone=auto`;
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            if (data.error) throw new Error(data.reason);
+const lonInput =
+    document.getElementById("lonInput");
 
-            weatherData = data.hourly;
-            weatherData.currentIndex = 24; 
-            
-            let latDir = lat >= 0 ? 'N' : 'S';
-            let lonDir = lon >= 0 ? 'E' : 'W';
-            coordsDisplay.innerText = `Lat: ${Math.abs(lat).toFixed(2)}° ${latDir} | Lon: ${Math.abs(lon).toFixed(2)}° ${lonDir}`;
-            
-            draw();
-        } catch (e) {
-            console.error("Fetch failed:", e);
-            if (!weatherData) weatherData = createDefaultWeatherData();
-            weatherData.isError = true;
-            draw();
-        }
-        loading.style.display = 'none';
-    }
+const btnSetLoc =
+    document.getElementById("btnSetLoc");
 
-    function formatDMS(degrees) {
-        let isNeg = degrees < 0;
-        let absDeg = Math.abs(degrees);
-        let d = Math.floor(absDeg);
-        let minFloat = (absDeg - d) * 60;
-        let m = Math.floor(minFloat);
-        let secFloat = (minFloat - m) * 60;
-        let s = Math.floor(secFloat);
-        
-        let micro = Math.floor((secFloat - s) * 1000000);
-        let microStr = micro.toString().padStart(6, '0');
+const btnAutoLoc =
+    document.getElementById("btnAutoLoc");
 
-        if (scale > 1000) {
-            return `${isNeg ? '-' : ''}${d}°${m}'${s}.${microStr}"`;
-        } else {
-            return `${isNeg ? '-' : ''}${d}°${m}'${s}"`;
-        }
-    }
+const uiPanel =
+    document.getElementById("ui-panel");
 
-    let cloudField = [];
-    function generateProceduralCloudPositions() {
-        cloudField = [];
-        for (let i = 0; i < 400; i++) {
-            cloudField.push({
-                azimuth: Math.random() * Math.PI * 2,
-                altitude: Math.pow(Math.random(), 0.7) * 88,
-                scaleMod: 0.7 + Math.random() * 0.8,
-                layer: Math.random() < 0.4 ? 'low' : (Math.random() < 0.7 ? 'mid' : 'high')
-            });
-        }
-    }
+const togglePanel =
+    document.getElementById("toggle-panel");
 
-    function draw() {
-        if (!weatherData) return;
 
-        const exactOffset = parseFloat(timeSlider.value);
-        let idx0 = weatherData.currentIndex + Math.floor(exactOffset);
-        let idx1 = idx0 + 1;
-        let t = exactOffset - Math.floor(exactOffset);
+/* =====================================================
+   LOCATION
+   ===================================================== */
 
-        if (idx0 < 0) idx0 = 0;
-        if (idx1 >= weatherData.time.length) idx1 = weatherData.time.length - 1;
+let lat = 20.26;
 
-        let time0 = new Date(weatherData.time[idx0]).getTime();
-        let time1 = new Date(weatherData.time[idx1]).getTime();
-        let exactTime = new Date(lerp(time0, time1, t));
-        
-        timeDisplay.innerText = exactTime.toLocaleString([], {
-            weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+let lon = 75.77;
+
+
+/* =====================================================
+   CAMERA
+   ===================================================== */
+
+let scale = 1;
+
+let panX = window.innerWidth / 2;
+
+let panY = window.innerHeight / 2;
+
+let dragging = false;
+
+let startX = 0;
+
+let startY = 0;
+
+
+/* =====================================================
+   WEATHER DATA
+   ===================================================== */
+
+let weatherData = null;
+
+
+/* =====================================================
+   CLOUD FIELD
+   ===================================================== */
+
+let cloudField = [];
+
+
+function generateClouds(){
+
+    cloudField = [];
+
+    for(let i=0;i<450;i++){
+
+        cloudField.push({
+
+            azimuth:
+                Math.random() *
+                Math.PI *
+                2,
+
+            altitude:
+                Math.pow(
+                    Math.random(),
+                    .7
+                ) * 88,
+
+            scale:
+                .7 +
+                Math.random() * .8,
+
+            layer:
+                Math.random() < .4
+                ? "low"
+                :
+                Math.random() < .7
+                ? "mid"
+                :
+                "high"
+
         });
-        
-        if (!isUpdatingTimeInput) {
-            let tzOffset = exactTime.getTimezoneOffset() * 60000;
-            let localISOTime = (new Date(exactTime.getTime() - tzOffset)).toISOString().slice(0, 16);
-            manualTimeInput.value = localISOTime;
+
+    }
+
+}
+
+
+generateClouds();
+
+
+/* =====================================================
+   HELPERS
+   ===================================================== */
+
+function lerp(a,b,t){
+
+    return a +
+        (b-a)*t;
+
+}
+
+
+function value(array,index){
+
+    if(!array)
+        return 0;
+
+    if(array[index] === undefined)
+        return 0;
+
+    return Number(array[index]) || 0;
+
+}
+
+
+function clamp(value,min,max){
+
+    return Math.max(
+        min,
+        Math.min(max,value)
+    );
+
+}
+
+
+/* =====================================================
+   RESIZE
+   ===================================================== */
+
+function resize(){
+
+    canvas.width =
+        window.innerWidth;
+
+    canvas.height =
+        window.innerHeight;
+
+    if(!panX)
+        panX =
+            canvas.width/2;
+
+    if(!panY)
+        panY =
+            canvas.height/2;
+
+    draw();
+
+}
+
+
+window.addEventListener(
+    "resize",
+    resize
+);
+
+
+/* =====================================================
+   WEATHER API
+   ===================================================== */
+
+async function fetchWeatherData(){
+
+    loading.style.display =
+        "block";
+
+    loading.innerText =
+        "Syncing weather data...";
+
+
+    try{
+
+        const url =
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day,wind_direction_10m&past_days=1&forecast_days=4&timezone=auto`;
+
+
+        const response =
+            await fetch(url);
+
+
+        const data =
+            await response.json();
+
+
+        if(data.error){
+
+            throw new Error(
+                data.reason
+            );
+
         }
 
-        let cTotal = lerp(weatherData.cloud_cover[idx0], weatherData.cloud_cover[idx1], t);
-        let cLow = lerp(weatherData.cloud_cover_low[idx0], weatherData.cloud_cover_low[idx1], t);
-        let cMid = lerp(weatherData.cloud_cover_mid[idx0], weatherData.cloud_cover_mid[idx1], t);
-        let cHigh = lerp(weatherData.cloud_cover_high[idx0], weatherData.cloud_cover_high[idx1], t);
-        
-        weatherInfo.innerText = `Total Cloudiness: ${Math.round(cTotal)}% | Low: ${Math.round(cLow)}% | Mid: ${Math.round(cMid)}% | High: ${Math.round(cHigh)}%`;
 
-        let w0 = weatherData.wind_direction_10m[idx0] || 0;
-        let w1 = weatherData.wind_direction_10m[idx1] || 0;
-        let wDiff = (w1 - w0 + 540) % 360 - 180; 
-        let windDir = (w0 + wDiff * t) * Math.PI / 180;
-        let dayRatio = lerp(weatherData.is_day[idx0], weatherData.is_day[idx1], t);
+        weatherData =
+            data.hourly;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const skyRadius = Math.min(canvas.width, canvas.height) * 0.42 * scale;
 
-        ctx.save();
-        ctx.translate(panX, panY);
+        weatherData.currentIndex =
+            24;
 
-        ctx.fillStyle = "#03040a"; 
-        ctx.fillRect(-panX, -panY, canvas.width, canvas.height);
+
+        updateCoordinates();
+
+
+        draw();
+
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(
+            "Weather data could not be loaded. Please check your internet connection."
+        );
+
+    }
+
+    finally{
+
+        loading.style.display =
+            "none";
+
+    }
+
+}
+
+
+/* =====================================================
+   COORDINATES
+   ===================================================== */
+
+function updateCoordinates(){
+
+    const latDirection =
+        lat >= 0
+        ? "N"
+        : "S";
+
+
+    const lonDirection =
+        lon >= 0
+        ? "E"
+        : "W";
+
+
+    coordsDisplay.innerText =
+        `Lat: ${Math.abs(lat).toFixed(2)}° ${latDirection} | Lon: ${Math.abs(lon).toFixed(2)}° ${lonDirection}`;
+
+}
+
+
+/* =====================================================
+   MAIN DRAW FUNCTION
+   ===================================================== */
+
+function draw(){
+
+    if(!weatherData)
+        return;
+
+
+    const offset =
+        parseFloat(
+            timeSlider.value
+        );
+
+
+    let index =
+        weatherData.currentIndex +
+        Math.floor(offset);
+
+
+    index =
+        clamp(
+            index,
+            0,
+            weatherData.time.length-2
+        );
+
+
+    const fraction =
+        offset -
+        Math.floor(offset);
+
+
+    const time0 =
+        new Date(
+            weatherData.time[index]
+        ).getTime();
+
+
+    const time1 =
+        new Date(
+            weatherData.time[index+1]
+        ).getTime();
+
+
+    const exactTime =
+        new Date(
+            lerp(
+                time0,
+                time1,
+                fraction
+            )
+        );
+
+
+    timeDisplay.innerText =
+        exactTime.toLocaleString(
+            [],
+            {
+                weekday:"short",
+                month:"short",
+                day:"numeric",
+                hour:"2-digit",
+                minute:"2-digit"
+            }
+        );
+
+
+    /* CLOUD DATA */
+
+    const totalCloud =
+        lerp(
+            value(
+                weatherData.cloud_cover,
+                index
+            ),
+            value(
+                weatherData.cloud_cover,
+                index+1
+            ),
+            fraction
+        );
+
+
+    const lowCloud =
+        lerp(
+            value(
+                weatherData.cloud_cover_low,
+                index
+            ),
+            value(
+                weatherData.cloud_cover_low,
+                index+1
+            ),
+            fraction
+        );
+
+
+    const midCloud =
+        lerp(
+            value(
+                weatherData.cloud_cover_mid,
+                index
+            ),
+            value(
+                weatherData.cloud_cover_mid,
+                index+1
+            ),
+            fraction
+        );
+
+
+    const highCloud =
+        lerp(
+            value(
+                weatherData.cloud_cover_high,
+                index
+            ),
+            value(
+                weatherData.cloud_cover_high,
+                index+1
+            ),
+            fraction
+        );
+
+
+    const day =
+        lerp(
+            value(
+                weatherData.is_day,
+                index
+            ),
+            value(
+                weatherData.is_day,
+                index+1
+            ),
+            fraction
+        );
+
+
+    weatherInfo.innerText =
+        `Total Cloudiness: ${Math.round(totalCloud)}% | Low: ${Math.round(lowCloud)}% | Mid: ${Math.round(midCloud)}% | High: ${Math.round(highCloud)}%`;
+
+
+    /* =================================================
+       CLEAR CANVAS
+       ================================================= */
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    /* =================================================
+       SKY RADIUS
+       ================================================= */
+
+    const radius =
+        Math.min(
+            canvas.width,
+            canvas.height
+        ) *
+        0.42 *
+        scale;
+
+
+    ctx.save();
+
+
+    ctx.translate(
+        panX,
+        panY
+    );
+
+
+    /* =================================================
+       BACKGROUND
+       ================================================= */
+
+    ctx.fillStyle =
+        "#03040a";
+
+
+    ctx.fillRect(
+        -panX,
+        -panY,
+        canvas.width,
+        canvas.height
+    );
+
+
+    /* =================================================
+       SKY CIRCLE
+       ================================================= */
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        0,
+        radius,
+        0,
+        Math.PI*2
+    );
+
+
+    const skyGradient =
+        ctx.createRadialGradient(
+            0,
+            0,
+            5,
+            0,
+            0,
+            radius
+        );
+
+
+    if(day > .5){
+
+        skyGradient.addColorStop(
+            0,
+            "#143c5a"
+        );
+
+        skyGradient.addColorStop(
+            .7,
+            "#0f2d4b"
+        );
+
+        skyGradient.addColorStop(
+            1,
+            "#19466e"
+        );
+
+    }
+
+    else{
+
+        skyGradient.addColorStop(
+            0,
+            "#02050c"
+        );
+
+        skyGradient.addColorStop(
+            .7,
+            "#040916"
+        );
+
+        skyGradient.addColorStop(
+            1,
+            "#08101f"
+        );
+
+    }
+
+
+    ctx.fillStyle =
+        skyGradient;
+
+    ctx.fill();
+
+
+    /* =================================================
+       CLIP INSIDE CIRCLE
+       ================================================= */
+
+    ctx.save();
+
+    ctx.clip();
+
+
+    /* =================================================
+       CIRCULAR ALTITUDE GRID
+       ================================================= */
+
+    ctx.lineWidth = 1;
+
+    ctx.strokeStyle =
+        "rgba(0,255,255,.30)";
+
+    ctx.fillStyle =
+        "rgba(0,255,255,.75)";
+
+    ctx.font =
+        "11px monospace";
+
+
+    let altitudeStep =
+        15;
+
+
+    if(scale > 4)
+        altitudeStep = 5;
+
+
+    if(scale > 15)
+        altitudeStep = 1;
+
+
+    for(
+        let altitude=0;
+        altitude<=90;
+        altitude+=altitudeStep
+    ){
+
+        const r =
+            radius *
+            (
+                1 -
+                altitude/90
+            );
+
 
         ctx.beginPath();
-        ctx.arc(0, 0, skyRadius, 0, Math.PI * 2);
 
-        let sCol1 = lerpColor([2, 5, 12], [20, 60, 90], dayRatio);
-        let sCol2 = lerpColor([4, 9, 22], [15, 45, 75], dayRatio);
-        let sCol3 = lerpColor([8, 15, 30], [25, 70, 110], dayRatio);
+        ctx.arc(
+            0,
+            0,
+            r,
+            0,
+            Math.PI*2
+        );
 
-        let skyGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, skyRadius);
-        skyGrad.addColorStop(0, `rgb(${sCol1[0]},${sCol1[1]},${sCol1[2]})`);
-        skyGrad.addColorStop(0.7, `rgb(${sCol2[0]},${sCol2[1]},${sCol2[2]})`);
-        skyGrad.addColorStop(1, `rgb(${sCol3[0]},${sCol3[1]},${sCol3[2]})`);
-        
-        ctx.fillStyle = skyGrad;
-        ctx.fill();
+        ctx.stroke();
+
+
+        if(
+            altitude % 15 === 0
+        ){
+
+            ctx.fillText(
+                `Alt ${altitude}°`,
+                7,
+                -r+13
+            );
+
+        }
+
+    }
+
+
+    /* =================================================
+       AZIMUTH LINES
+       ================================================= */
+
+    for(
+        let azimuth=0;
+        azimuth<360;
+        azimuth+=30
+    ){
+
+        const angle =
+            (
+                azimuth -
+                90
+            ) *
+            Math.PI /
+            180;
+
+
+        const x =
+            Math.cos(angle) *
+            radius;
+
+
+        const y =
+            Math.sin(angle) *
+            radius;
+
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            0,
+            0
+        );
+
+        ctx.lineTo(
+            x,
+            y
+        );
+
+        ctx.stroke();
+
 
         ctx.save();
-        ctx.clip();
 
-        ctx.lineWidth = 1;
-        ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 5;
-        
-        let gridR = 0, gridG = 255, gridB = 255;
-        let alpha = lerp(0.15, 0.4, dayRatio);
-        
-        ctx.strokeStyle = `rgba(${gridR}, ${gridG}, ${gridB}, ${alpha})`;
-        ctx.fillStyle = `rgba(${gridR}, ${gridG}, ${gridB}, ${alpha + 0.3})`;
-        ctx.font = "11px monospace";
 
-        let altStep = 15;
-        if (scale > 4) altStep = 5;
-        if (scale > 15) altStep = 1;
-        if (scale > 100) altStep = 1/60; 
+        ctx.translate(
+            x*.88,
+            y*.88
+        );
 
-        for (let alt = 0; alt < 90; alt += altStep) {
-            let r = skyRadius * (1 - alt / 90);
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.stroke();
 
-            if (scale > 1.5 || alt % 15 === 0) {
-                ctx.fillText(`Alt ${formatDMS(alt)}`, 6, -r + 12);
-            }
+        ctx.rotate(
+            angle +
+            Math.PI/2
+        );
+
+
+        ctx.textAlign =
+            "center";
+
+
+        ctx.fillText(
+            `Az ${azimuth}°`,
+            0,
+            0
+        );
+
+
+        ctx.restore();
+
+    }
+
+
+    /* =================================================
+       HORIZON CIRCLE
+       ================================================= */
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        0,
+        radius,
+        0,
+        Math.PI*2
+    );
+
+
+    ctx.lineWidth = 2;
+
+    ctx.strokeStyle =
+        "rgba(0,255,255,.8)";
+
+    ctx.stroke();
+
+
+    /* =================================================
+       CLOUDS
+       ================================================= */
+
+    for(
+        let i=0;
+        i<cloudField.length;
+        i++
+    ){
+
+        const cloud =
+            cloudField[i];
+
+
+        let cover;
+
+
+        if(
+            cloud.layer === "low"
+        ){
+
+            cover =
+                lowCloud;
+
         }
 
-        let azStep = altStep >= 1 ? 30 : 15;
-        for (let az = 0; az < 360; az += azStep) {
-            let angle = (az - 90) * Math.PI / 180;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            let edgeX = Math.cos(angle) * skyRadius;
-            let edgeY = Math.sin(angle) * skyRadius;
-            ctx.lineTo(edgeX, edgeY);
-            ctx.stroke();
+        else if(
+            cloud.layer === "mid"
+        ){
 
-            if (scale > 1.5 || az % 30 === 0) {
-                ctx.save();
-                ctx.translate(edgeX * 0.9, edgeY * 0.9); 
-                ctx.rotate(angle + Math.PI/2);
-                ctx.textAlign = "center";
-                ctx.fillText(`Az ${formatDMS(az)}`, 0, 0);
-                ctx.restore();
-            }
+            cover =
+                midCloud;
+
         }
 
-        ctx.shadowBlur = 0;
+        else{
 
-        let globalCloudAlpha = lerp(0.45, 0.85, dayRatio);
-        cloudField.forEach((c, idx) => {
-            let targetCover = c.layer === 'low' ? cLow : (c.layer === 'mid' ? cMid : cHigh);
-            let threshold = idx % 100;
-            let visibilityDiff = targetCover - threshold;
+            cover =
+                highCloud;
+
+        }
+
+
+        const randomThreshold =
+            (i*37)%100;
+
+
+        if(
+            cover <=
+            randomThreshold
+        )
+            continue;
+
+
+        const cloudRadius =
+            radius *
+            (
+                1 -
+                cloud.altitude/90
+            );
+
+
+        const x =
+            Math.cos(
+                cloud.azimuth
+            ) *
+            cloudRadius;
+
+
+        const y =
+            Math.sin(
+                cloud.azimuth
+            ) *
+            cloudRadius;
+
+
+        let size;
+
+
+        if(
+            cloud.layer === "low"
+        ){
+
+            size =
+                38 *
+                cloud.scale;
+
+        }
+
+        else if(
+            cloud.layer === "mid"
+        ){
+
+            size =
+                29 *
+                cloud.scale;
+
+        }
+
+        else{
+
+            size =
+                21 *
+                cloud.scale;
+
+        }
+
+
+        size *=
+            .7 +
+            totalCloud/100;
+
+
+        const cloudGradient =
+            ctx.createRadialGradient(
+                x,
+                y,
+                2,
+                x,
+                y,
+                size
+            );
+
+
+        cloudGradient.addColorStop(
+            0,
+            `rgba(240,245,255,${Math.min(.8,cover/100+.15)})`
+        );
+
+
+        cloudGradient.addColorStop(
+            .45,
+            `rgba(190,205,225,${Math.min(.5,cover/200)})`
+        );
+
+
+        cloudGradient.addColorStop(
+            1,
+            "rgba(150,170,195,0)"
+        );
+
+
+        ctx.fillStyle =
+            cloudGradient;
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            x,
+            y,
+            size,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fill();
+
+    }
+
+
+    /* =================================================
+       NORTH / SOUTH / EAST / WEST
+       ================================================= */
+
+    ctx.fillStyle =
+        "#00ffff";
+
+    ctx.font =
+        "bold 16px monospace";
+
+    ctx.textAlign =
+        "center";
+
+
+    ctx.fillText(
+        "N",
+        0,
+        -radius+25
+    );
+
+
+    ctx.fillText
             
-            if (visibilityDiff > 0) {
-                let localAlpha = visibilityDiff < 1 ? visibilityDiff : 1.0; 
-                let az = c.azimuth + windDir * 0.1;
-                let r = skyRadius * (1 - c.altitude / 90);
-
-                let x = Math.cos(az) * r;
-                let y = Math.sin(az) * r;
-
-                let img = cloudTextures[c.layer];
-                let render
