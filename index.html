@@ -571,4 +571,17 @@
                 let y = Math.sin(az) * r;
 
                 let img = cloudTextures[c.layer];
-                let render
+                let renderSize = 80 * c.scaleMod;
+let renderW = renderSize;
+let renderH = renderSize;
+
+ctx.save();
+ctx.globalAlpha = globalCloudAlpha * localAlpha;
+ctx.drawImage(
+    img,
+    x - renderW / 2,
+    y - renderH / 2,
+    renderW,
+    renderH
+);
+ctx.restore();
