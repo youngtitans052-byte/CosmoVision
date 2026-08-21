@@ -564,11 +564,15 @@
             
             if (visibilityDiff > 0) {
                 let localAlpha = visibilityDiff < 1 ? visibilityDiff : 1.0; 
+                // Azimuth convention:
+                // 0° = North (top), 90° = East (right),
+                // 180° = South (bottom), 270° = West (left).
                 let az = c.azimuth + windDir * 0.1;
                 let r = skyRadius * (1 - c.altitude / 90);
+                let skyAngle = az - Math.PI / 2;
 
-                let x = Math.cos(az) * r;
-                let y = Math.sin(az) * r;
+                let x = Math.cos(skyAngle) * r;
+                let y = Math.sin(skyAngle) * r;
 
                 let img = cloudTextures[c.layer];
                 let renderSize = 80 * c.scaleMod;
@@ -585,3 +589,273 @@ ctx.drawImage(
     renderH
 );
 ctx.restore();
+}
+        ctx.restore(); // end clipped sky/grid layer
+
+        // Compass directions are fixed to the azimuth coordinate system.
+        const compass = [
+            { label: "N", az: 0 },
+            { label: "NE", az: 45 },
+            { label: "E", az: 90 },
+            { label: "SE", az: 135 },
+            { label: "S", az: 180 },
+            { label: "SW", az: 225 },
+            { label: "W", az: 270 },
+            { label: "NW", az: 315 }
+        ];
+
+        ctx.shadowColor = "#00ffff";
+        ctx.shadowBlur = 10;
+        ctx.font = "bold 17px Segoe UI, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        compass.forEach(c => {
+            const angle = (c.az - 90) * Math.PI / 180;
+            const r = skyRadius * 1.08;
+            const x = Math.cos(angle) * r;
+            const y = Math.sin(angle) * r;
+
+            ctx.fillStyle = c.label === "N" ? "#ff1744" : "#00ffff";
+            ctx.fillText(c.label, x, y);
+        });
+
+        ctx.shadowBlur = 0;
+
+        // Center marker = observer / zenith.
+        ctx.beginPath();
+        ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ff1744";
+        ctx.shadowColor = "#ff1744";
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Small legend.
+        const legendY = -skyRadius - 28;
+        ctx.font = "11px monospace";
+        ctx.textAlign = "left";
+        ctx.fillStyle = "rgba(0,255,255,0.75)";
+        ctx.fillText("AZ 0° = North   •   ALT 90° = Zenith", -skyRadius, legendY);
+
+        ctx.restore(); // end sky transform
+    }
+
+    // ---------- Interaction ----------
+    function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function screenToSky(clientX, clientY) {
+        return {
+            x: (clientX - panX) / scale,
+            y: (clientY - panY) / scale
+        };
+    }
+
+    function getCloudAtPoint(clientX, clientY) {
+        if (!weatherData) return null;
+
+        const p = screenToSky(clientX, clientY);
+        const skyRadius = Math.min(canvas.width, canvas.height) * 0.42 * scale;
+
+        // Convert screen point back into the unscaled sky coordinate system.
+        const ux = p.x * scale;
+        const uy = p.y * scale;
+        const r = Math.hypot(ux, uy);
+
+        if (r > skyRadius) return null;
+
+        const angle = Math.atan2(uy, ux);
+        const azimuth = (angle * 180 / Math.PI + 90 + 360) % 360;
+        const altitude = 90 * (1 - r / skyRadius);
+
+        return { azimuth, altitude };
+    }
+
+    canvas.addEventListener("wheel", (e) => {
+        e.preventDefault();
+
+        const oldScale = scale;
+        const zoomFactor = Math.exp(-e.deltaY * 0.0015);
+        const newScale = clamp(oldScale * zoomFactor, 0.65, 80);
+
+        // Zoom around the cursor.
+        const mx = e.clientX;
+        const my = e.clientY;
+        panX = mx - (mx - panX) * (newScale / oldScale);
+        panY = my - (my - panY) * (newScale / oldScale);
+
+        scale = newScale;
+        draw();
+    }, { passive: false });
+
+    canvas.addEventListener("pointerdown", (e) => {
+        isDragging = true;
+        startDragX = e.clientX - panX;
+        startDragY = e.clientY - panY;
+        canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener("pointermove", (e) => {
+        if (!isDragging) return;
+        panX = e.clientX - startDragX;
+        panY = e.clientY - startDragY;
+        draw();
+    });
+
+    canvas.addEventListener("pointerup", (e) => {
+        isDragging = false;
+        try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+        isDragging = false;
+    });
+
+    // Double-click/tap resets the view.
+    canvas.addEventListener("dblclick", () => {
+        scale = 1;
+        panX = canvas.width / 2;
+        panY = canvas.height / 2;
+        draw();
+    });
+
+    // ---------- Time controls ----------
+    timeSlider.addEventListener("input", draw);
+
+    manualTimeInput.addEventListener("change", () => {
+        if (!weatherData || !weatherData.time || !weatherData.time.length) return;
+
+        const chosen = new Date(manualTimeInput.value);
+        if (Number.isNaN(chosen.getTime())) return;
+
+        const base = new Date(weatherData.time[weatherData.currentIndex]).getTime();
+        let offsetHours = (chosen.getTime() - base) / 3600000;
+
+        offsetHours = clamp(
+            offsetHours,
+            Number(timeSlider.min),
+            Number(timeSlider.max)
+        );
+
+        isUpdatingTimeInput = true;
+        timeSlider.value = offsetHours.toFixed(2);
+        isUpdatingTimeInput = false;
+        draw();
+    });
+
+    // ---------- Location ----------
+    btnSetLoc.addEventListener("click", () => {
+        const newLat = Number(latInput.value);
+        const newLon = Number(lonInput.value);
+
+        if (
+            !Number.isFinite(newLat) ||
+            !Number.isFinite(newLon) ||
+            newLat < -90 || newLat > 90 ||
+            newLon < -180 || newLon > 180
+        ) {
+            alert("Please enter a valid latitude (-90 to 90) and longitude (-180 to 180).");
+            return;
+        }
+
+        lat = newLat;
+        lon = newLon;
+        fetchWeatherData();
+    });
+
+    btnAutoLoc.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by this browser.");
+            return;
+        }
+
+        loading.innerText = "Getting GPS location...";
+        loading.style.display = "block";
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                lat = position.coords.latitude;
+                lon = position.coords.longitude;
+
+                latInput.value = lat.toFixed(4);
+                lonInput.value = lon.toFixed(4);
+
+                fetchWeatherData();
+            },
+            (error) => {
+                loading.style.display = "none";
+                alert("Could not get your location: " + error.message);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000
+            }
+        );
+    });
+
+    // ---------- Cloud generation ----------
+    // Open-Meteo gives cloud-cover percentages, not individual cloud coordinates.
+    // These procedural clouds therefore represent the requested cloud percentage
+    // in the AZ/ALT sky dome. Replace this generator later with real cloud-vector
+    // data if you have an API that supplies cloud positions.
+    function seededRandom(seed) {
+        let x = Math.sin(seed * 12.9898) * 43758.5453;
+        return x - Math.floor(x);
+    }
+
+    function generateProceduralCloudPositions() {
+        cloudField = [];
+
+        for (let i = 0; i < 400; i++) {
+            const r1 = seededRandom(i + 11);
+            const r2 = seededRandom(i + 97);
+            const r3 = seededRandom(i + 251);
+            const r4 = seededRandom(i + 503);
+
+            let layer;
+            if (r1 < 0.40) layer = "low";
+            else if (r1 < 0.72) layer = "mid";
+            else layer = "high";
+
+            // Avoid putting most clouds exactly at the zenith.
+            const altitude = 3 + Math.pow(r2, 0.72) * 84;
+
+            cloudField.push({
+                azimuth: r3 * Math.PI * 2,
+                altitude,
+                scaleMod: 0.65 + r4 * 0.9,
+                layer,
+                drift: 0.15 + seededRandom(i + 801) * 0.55
+            });
+        }
+    }
+
+    // Re-seed once at startup.
+    generateProceduralCloudPositions();
+
+    // ---------- Startup ----------
+    function initialize() {
+        resize();
+
+        // Use a sensible local datetime for the datetime-local control.
+        const now = new Date();
+        const tzOffset = now.getTimezoneOffset() * 60000;
+        manualTimeInput.value = new Date(now.getTime() - tzOffset)
+            .toISOString()
+            .slice(0, 16);
+
+        fetchWeatherData();
+    }
+
+    // Refresh the forecast periodically so the map remains useful as a live view.
+    setInterval(() => {
+        fetchWeatherData();
+    }, 15 * 60 * 1000);
+
+    initialize();
+</script>
+</body>
+</html>
