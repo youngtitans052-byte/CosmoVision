@@ -384,30 +384,120 @@
     window.addEventListener('resize', resize);
 
     async function fetchWeatherData() {
-        loading.innerText = "Syncing Data...";
+        loading.innerText = "Fetching live Open-Meteo data...";
         loading.style.display = 'block';
+
         try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day,wind_direction_10m&past_days=1&forecast_days=4&timezone=auto`;
-            const response = await fetch(url);
+            // All displayed weather values come directly from Open-Meteo.
+            // No synthetic weather values are used as a fallback.
+            const params = new URLSearchParams({
+                latitude: lat,
+                longitude: lon,
+                hourly: [
+                    'temperature_2m',
+                    'relative_humidity_2m',
+                    'pressure_msl',
+                    'precipitation',
+                    'precipitation_probability',
+                    'weather_code',
+                    'cloud_cover',
+                    'cloud_cover_low',
+                    'cloud_cover_mid',
+                    'cloud_cover_high',
+                    'wind_speed_10m',
+                    'wind_direction_10m',
+                    'is_day'
+                ].join(','),
+                past_days: 1,
+                forecast_days: 4,
+                timezone: 'auto'
+            });
+
+            const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Open-Meteo HTTP ${response.status}`);
+            }
+
             const data = await response.json();
-            
-            if (data.error) throw new Error(data.reason);
+            if (data.error) throw new Error(data.reason || 'Open-Meteo returned an error.');
+            if (!data.hourly || !data.hourly.time || data.hourly.time.length === 0) {
+                throw new Error('Open-Meteo returned no hourly weather data.');
+            }
 
             weatherData = data.hourly;
-            weatherData.currentIndex = 24; 
-            
+            weatherData.currentIndex = Math.min(24, weatherData.time.length - 2);
+            weatherData.timezone = data.timezone || 'local';
+            weatherData.timezone_abbreviation = data.timezone_abbreviation || '';
+            weatherData.isError = false;
+
             let latDir = lat >= 0 ? 'N' : 'S';
             let lonDir = lon >= 0 ? 'E' : 'W';
-            coordsDisplay.innerText = `Lat: ${Math.abs(lat).toFixed(2)}° ${latDir} | Lon: ${Math.abs(lon).toFixed(2)}° ${lonDir}`;
-            
+            coordsDisplay.innerText = `Lat: ${Math.abs(lat).toFixed(2)}° ${latDir} | Lon: ${Math.abs(lon).toFixed(2)}° ${lonDir} | Open-Meteo: ${weatherData.timezone_abbreviation || weatherData.timezone}`;
+
             draw();
         } catch (e) {
-            console.error("Fetch failed:", e);
-            if (!weatherData) weatherData = createDefaultWeatherData();
-            weatherData.isError = true;
-            draw();
+            console.error('Open-Meteo fetch failed:', e);
+            weatherData = null;
+            timeDisplay.innerText = 'Open-Meteo data unavailable';
+            weatherInfo.innerText = `LIVE DATA ERROR: ${e.message}`;
+            loading.innerText = 'Open-Meteo connection failed';
+            drawStaticSky();
+        } finally {
+            setTimeout(() => { loading.style.display = 'none'; }, 900);
         }
-        loading.style.display = 'none';
+    }
+
+    // Draw the dome/grid even if the network request fails, but NEVER invent
+    // weather values. This keeps the visualization honest.
+    function drawStaticSky() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const skyRadius = Math.min(canvas.width, canvas.height) * 0.42 * scale;
+        ctx.save();
+        ctx.translate(panX, panY);
+        ctx.fillStyle = '#03040a';
+        ctx.fillRect(-panX, -panY, canvas.width, canvas.height);
+
+        ctx.beginPath();
+        ctx.arc(0, 0, skyRadius, 0, Math.PI * 2);
+        const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, skyRadius);
+        grad.addColorStop(0, '#14283a');
+        grad.addColorStop(1, '#06101b');
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.save();
+        ctx.clip();
+        ctx.strokeStyle = 'rgba(0,255,255,0.25)';
+        ctx.lineWidth = 1;
+        for (let alt = 0; alt < 90; alt += 15) {
+            const r = skyRadius * (1 - alt / 90);
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        for (let az = 0; az < 360; az += 30) {
+            const a = (az - 90) * Math.PI / 180;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(a) * skyRadius, Math.sin(a) * skyRadius);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        const compass = [['N',0],['NE',45],['E',90],['SE',135],['S',180],['SW',225],['W',270],['NW',315]];
+        ctx.font = 'bold 17px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        compass.forEach(([label, az]) => {
+            const a = (az - 90) * Math.PI / 180;
+            const r = skyRadius * 1.08;
+            ctx.fillStyle = label === 'N' ? '#ff1744' : '#00ffff';
+            ctx.fillText(label, Math.cos(a) * r, Math.sin(a) * r);
+        });
+        ctx.restore();
     }
 
     function formatDMS(degrees) {
@@ -453,6 +543,8 @@
         if (idx0 < 0) idx0 = 0;
         if (idx1 >= weatherData.time.length) idx1 = weatherData.time.length - 1;
 
+        // Open-Meteo returns local ISO timestamps when timezone=auto.
+        // Parse them as displayed by the user's browser locale.
         let time0 = new Date(weatherData.time[idx0]).getTime();
         let time1 = new Date(weatherData.time[idx1]).getTime();
         let exactTime = new Date(lerp(time0, time1, t));
@@ -472,7 +564,14 @@
         let cMid = lerp(weatherData.cloud_cover_mid[idx0], weatherData.cloud_cover_mid[idx1], t);
         let cHigh = lerp(weatherData.cloud_cover_high[idx0], weatherData.cloud_cover_high[idx1], t);
         
-        weatherInfo.innerText = `Total Cloudiness: ${Math.round(cTotal)}% | Low: ${Math.round(cLow)}% | Mid: ${Math.round(cMid)}% | High: ${Math.round(cHigh)}%`;
+        const temp = lerp(weatherData.temperature_2m[idx0], weatherData.temperature_2m[idx1], t);
+        const humidity = lerp(weatherData.relative_humidity_2m[idx0], weatherData.relative_humidity_2m[idx1], t);
+        const pressure = lerp(weatherData.pressure_msl[idx0], weatherData.pressure_msl[idx1], t);
+        const precip = lerp(weatherData.precipitation[idx0], weatherData.precipitation[idx1], t);
+        const precipProb = lerp(weatherData.precipitation_probability[idx0], weatherData.precipitation_probability[idx1], t);
+        const windSpeed = lerp(weatherData.wind_speed_10m[idx0], weatherData.wind_speed_10m[idx1], t);
+
+        weatherInfo.innerText = `Open-Meteo • ${Math.round(temp)}°C | RH ${Math.round(humidity)}% | Pressure ${Math.round(pressure)} hPa | Rain ${precip.toFixed(1)} mm (${Math.round(precipProb)}%) | Wind ${windSpeed.toFixed(1)} km/h | Clouds ${Math.round(cTotal)}% (L ${Math.round(cLow)} / M ${Math.round(cMid)} / H ${Math.round(cHigh)})`;
 
         let w0 = weatherData.wind_direction_10m[idx0] || 0;
         let w1 = weatherData.wind_direction_10m[idx1] || 0;
@@ -589,7 +688,8 @@ ctx.drawImage(
     renderH
 );
 ctx.restore();
-}
+            }
+        });
         ctx.restore(); // end clipped sky/grid layer
 
         // Compass directions are fixed to the azimuth coordinate system.
